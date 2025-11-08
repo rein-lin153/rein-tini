@@ -47,6 +47,9 @@ def create_app(config_name=None):
     # 注册上下文处理器
     register_context_processors(app)
     
+    # 注册上传文件的静态路由（开发环境）
+    register_upload_handler(app)
+    
     # 配置日志
     configure_logging(app)
     
@@ -158,6 +161,16 @@ def register_context_processors(app):
         """注入当前时间到模板"""
         from datetime import datetime
         return {'now': datetime.utcnow()}
+
+
+def register_upload_handler(app):
+    """注册上传文件的静态服务（仅用于开发环境）"""
+    from flask import send_from_directory
+    
+    @app.route('/uploads/<path:filename>')
+    def uploaded_file(filename):
+        """提供上传文件的访问"""
+        return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
 def configure_logging(app):
