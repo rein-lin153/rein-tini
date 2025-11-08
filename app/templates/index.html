@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - {{ SITE_TITLE }}{% endblock %}
+
+{% block content %}
+<!-- 主横幅 -->
+<div class="hero-section text-center mb-5 p-5 rounded shadow-lg" style="background: linear-gradient(135deg, #F7D6E0 0%, #E8D0FF 100%);">
+    <h1 class="display-3 fw-bold text-romantic mb-3">
+        {{ COUPLE_NAME_1 }} <i class="fas fa-heart text-danger pulse-heart"></i> {{ COUPLE_NAME_2 }}
+    </h1>
+    <p class="lead mb-4">{{ SITE_SUBTITLE }}</p>
+    
+    <!-- 在一起天数 -->
+    <div class="row g-3 justify-content-center">
+        <div class="col-md-4">
+            <div class="stat-card p-4 bg-white rounded shadow-sm">
+                <h2 class="display-4 fw-bold text-primary">{{ days_together }}</h2>
+                <p class="text-muted mb-0">在一起的天数</p>
+            </div>
+        </div>
+        
+        <!-- 爱情进度 -->
+        <div class="col-md-4">
+            <div class="stat-card p-4 bg-white rounded shadow-sm">
+                <h2 class="display-4 fw-bold text-success">{{ love_percentage }}%</h2>
+                <p class="text-muted mb-0">爱情指数</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 下一个纪念日倒计时 -->
+    {% if next_anniversary %}
+    <div class="mt-4 p-3 bg-white bg-opacity-75 rounded">
+        <h5 class="mb-2">
+            <i class="fas fa-calendar-heart text-danger"></i>
+            距离 <strong>{{ next_anniversary.name }}</strong> 还有
+        </h5>
+        <h3 class="fw-bold text-danger mb-1">{{ next_anniversary.days_left }} 天</h3>
+        <p class="text-muted small mb-0">
+            {{ next_anniversary.date.strftime('%Y年%m月%d日') if next_anniversary.date else '' }}
+        </p>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 最新照片 -->
+{% if latest_photos %}
+<section class="mb-5">
+    <h3 class="section-title mb-4">
+        <i class="fas fa-images text-primary"></i> 最新照片
+        <a href="{{ url_for('album.gallery') }}" class="btn btn-sm btn-outline-primary float-end">查看全部</a>
+    </h3>
+    
+    <div class="row g-3">
+        {% for photo in latest_photos %}
+        <div class="col-md-4">
+            <div class="photo-card">
+                <a href="{{ url_for('album.photo_detail', photo_id=photo.id) }}">
+                    <img src="{{ url_for('static', filename='../uploads/thumbs/' + photo.thumb_filename) }}" 
+                         alt="{{ photo.caption or '照片' }}" 
+                         class="img-fluid rounded shadow-sm hover-zoom">
+                </a>
+                {% if photo.caption %}
+                <p class="mt-2 text-center text-muted small">{{ photo.caption }}</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- 最新日记 -->
+{% if latest_posts %}
+<section class="mb-5">
+    <h3 class="section-title mb-4">
+        <i class="fas fa-book text-success"></i> 最新日记
+        <a href="{{ url_for('post.list_posts') }}" class="btn btn-sm btn-outline-success float-end">查看全部</a>
+    </h3>
+    
+    <div class="row g-3">
+        {% for post in latest_posts %}
+        <div class="col-md-4">
+            <div class="card shadow-sm hover-lift">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="{{ url_for('post.detail', post_id=post.id) }}" class="text-decoration-none">
+                            {{ post.title }}
+                        </a>
+                    </h5>
+                    <p class="card-text text-muted">
+                        {{ post.body[:100] }}{% if post.body|length > 100 %}...{% endif %}
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-user"></i> {{ post.author.display_name }}
+                        </small>
+                        <small class="text-muted">
+                            {{ post.created_at.strftime('%m-%d') }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- 最新留言 -->
+{% if latest_comments and ENABLE_MESSAGE_BOARD %}
+<section class="mb-5">
+    <h3 class="section-title mb-4">
+        <i class="fas fa-comments text-warning"></i> 最新留言
+        <a href="{{ url_for('message.board') }}" class="btn btn-sm btn-outline-warning float-end">查看全部</a>
+    </h3>
+    
+    <div class="comments-preview">
+        {% for comment in latest_comments %}
+        <div class="comment-item p-3 mb-2 bg-light rounded">
+            <div class="d-flex justify-content-between">
+                <strong>{{ comment.author.display_name }}</strong>
+                <small class="text-muted">{{ comment.created_at.strftime('%m-%d %H:%M') }}</small>
+            </div>
+            <p class="mb-0 mt-2">{{ comment.body }}</p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<!-- 快捷操作 -->
+{% if current_user.is_authenticated %}
+<section class="text-center">
+    <div class="quick-actions">
+        <a href="{{ url_for('album.upload') }}" class="btn btn-lg btn-primary me-2 mb-2">
+            <i class="fas fa-upload"></i> 上传照片
+        </a>
+        <a href="{{ url_for('post.new_post') }}" class="btn btn-lg btn-success me-2 mb-2">
+            <i class="fas fa-pen"></i> 写日记
+        </a>
+        <a href="{{ url_for('message.board') }}" class="btn btn-lg btn-warning mb-2">
+            <i class="fas fa-comment"></i> 写留言
+        </a>
+    </div>
+</section>
+{% endif %}
+
+{% endblock %}
+

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}文件过大 - {{ SITE_TITLE }}{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-1 text-info">413</h1>
+    <h2 class="mb-4">文件太大了</h2>
+    <p class="lead text-muted mb-4">上传的文件超过了最大限制（5MB），请选择小一点的文件</p>
+    <a href="javascript:history.back()" class="btn btn-primary btn-lg">
+        <i class="fas fa-arrow-left"></i> 返回上一页
+    </a>
+</div>
+{% endblock %}
+

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}禁止访问 - {{ SITE_TITLE }}{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-1 text-danger">403</h1>
+    <h2 class="mb-4">禁止访问</h2>
+    <p class="lead text-muted mb-4">抱歉，您没有权限访问此页面</p>
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-lg">
+        <i class="fas fa-home"></i> 返回首页
+    </a>
+</div>
+{% endblock %}
+

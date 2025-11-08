@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}日记本 - {{ SITE_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-book text-success"></i> 我们的日记</h2>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('post.new_post') }}" class="btn btn-success">
+        <i class="fas fa-pen"></i> 写新日记
+    </a>
+    {% endif %}
+</div>
+
+{% if posts.items %}
+<div class="row">
+    {% for post in posts.items %}
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm hover-lift h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h4 class="card-title">
+                        <a href="{{ url_for('post.detail', post_id=post.id) }}" class="text-decoration-none">
+                            {{ post.title }}
+                        </a>
+                    </h4>
+                    {% if post.mood %}
+                    <span class="badge bg-light text-dark">{{ post.mood }}</span>
+                    {% endif %}
+                </div>
+                
+                <p class="card-text text-muted">
+                    {{ post.body[:150] }}{% if post.body|length > 150 %}...{% endif %}
+                </p>
+                
+                <div class="d-flex justify-content-between align-items-center mt-3">
+                    <div>
+                        <i class="fas fa-user text-primary"></i> {{ post.author.display_name }}
+                        {% if post.is_private %}
+                        <span class="badge bg-warning text-dark ms-2">
+                            <i class="fas fa-lock"></i> 私密
+                        </span>
+                        {% endif %}
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-calendar"></i> {{ post.created_at.strftime('%Y-%m-%d') }}
+                    </small>
+                </div>
+            </div>
+            <div class="card-footer bg-transparent">
+                <a href="{{ url_for('post.detail', post_id=post.id) }}" class="btn btn-sm btn-outline-primary">
+                    阅读全文 <i class="fas fa-arrow-right"></i>
+                </a>
+                {% if current_user.is_authenticated and (current_user.id == post.author_id or current_user.is_admin) %}
+                <a href="{{ url_for('post.edit_post', post_id=post.id) }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-edit"></i> 编辑
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- 分页 -->
+{% if posts.pages > 1 %}
+<nav aria-label="日记分页" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if posts.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('post.list_posts', page=posts.prev_num) }}">上一页</a>
+        </li>
+        {% endif %}
+        
+        {% for page_num in posts.iter_pages() %}
+            {% if page_num %}
+                <li class="page-item {% if page_num == posts.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('post.list_posts', page=page_num) }}">{{ page_num }}</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if posts.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('post.list_posts', page=posts.next_num) }}">下一页</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-book-open text-muted" style="font-size: 5rem;"></i>
+    <p class="text-muted mt-3">还没有日记，快来写第一篇吧！</p>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('post.new_post') }}" class="btn btn-success">
+        <i class="fas fa-pen"></i> 写新日记
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
+

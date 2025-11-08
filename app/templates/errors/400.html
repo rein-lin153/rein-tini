@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}请求错误 - {{ SITE_TITLE }}{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-1 text-secondary">400</h1>
+    <h2 class="mb-4">请求错误</h2>
+    <p class="lead text-muted mb-4">抱歉，您的请求格式有误</p>
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-lg">
+        <i class="fas fa-home"></i> 返回首页
+    </a>
+</div>
+{% endblock %}
+

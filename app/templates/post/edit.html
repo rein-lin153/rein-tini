@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}{% if is_new %}写新日记{% else %}编辑日记{% endif %} - {{ SITE_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-pen"></i>
+                    {% if is_new %}写新日记{% else %}编辑日记{% endif %}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.title.label(class="form-label") }}
+                        {{ form.title(class="form-control form-control-lg", placeholder="给这篇日记起个标题...") }}
+                        {% if form.title.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.title.errors[0] }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.body.label(class="form-label") }}
+                        {{ form.body(class="form-control", rows=15, placeholder="记录下今天的美好瞬间...\n\n支持 Markdown 格式哦！") }}
+                        {% if form.body.errors %}
+                            <div class="text-danger small mt-1">
+                                {{ form.body.errors[0] }}
+                            </div>
+                        {% endif %}
+                        <div class="form-text">
+                            支持 Markdown 格式：**粗体**、*斜体*、[链接](url)、![图片](url)
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            {{ form.mood.label(class="form-label") }}
+                            {{ form.mood(class="form-select") }}
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">设置</label>
+                            <div class="form-check">
+                                {{ form.is_private(class="form-check-input") }}
+                                {{ form.is_private.label(class="form-check-label") }}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="{% if is_new %}{{ url_for('post.list_posts') }}{% else %}{{ url_for('post.detail', post_id=post.id) }}{% endif %}" 
+                           class="btn btn-secondary">
+                            取消
+                        </a>
+                        {{ form.submit(class="btn btn-success") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

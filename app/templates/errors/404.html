@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}页面未找到 - {{ SITE_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-1 text-muted">404</h1>
+    <h2 class="mb-4">哎呀，页面不见了</h2>
+    <p class="lead text-muted mb-4">我们找遍了每一个角落，也没找到这个页面...</p>
+    <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-lg">
+        <i class="fas fa-home"></i> 返回首页
+    </a>
+</div>
+{% endblock %}
+

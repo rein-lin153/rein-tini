@@ -1,0 +1,452 @@
+/* 心语时光 - 主样式表 */
+
+/* ========== 全局配置 ========== */
+:root {
+    --primary-color: #F7D6E0;
+    --secondary-color: #E8D0FF;
+    --accent-color: #FFB6C1;
+    --text-dark: #333333;
+    --text-muted: #6c757d;
+    --bg-light-pink: #FFF5F7;
+    --bg-light-purple: #F8F4FF;
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+    color: var(--text-dark);
+    background: linear-gradient(135deg, #FFF5F7 0%, #F8F4FF 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding-bottom: 60px;
+    position: relative;
+}
+
+/* ========== 导航栏 ========== */
+.navbar {
+    box-shadow: var(--shadow-sm);
+}
+
+.bg-light-pink {
+    background-color: var(--bg-light-pink) !important;
+}
+
+.navbar-brand {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text-dark) !important;
+}
+
+.navbar-brand:hover {
+    color: #FF69B4 !important;
+    transform: scale(1.05);
+    transition: all 0.3s ease;
+}
+
+.nav-link {
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border-radius: 8px;
+    margin: 0 4px;
+    padding: 8px 15px !important;
+}
+
+.nav-link:hover {
+    background-color: rgba(247, 214, 224, 0.5);
+    color: #FF1493 !important;
+    transform: translateY(-2px);
+}
+
+/* ========== 卡片样式 ========== */
+.card {
+    border: none;
+    border-radius: 15px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+}
+
+.hover-lift {
+    transition: all 0.3s ease;
+}
+
+.hover-lift:hover {
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-lg) !important;
+}
+
+/* ========== 图片样式 ========== */
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+.hover-zoom {
+    transition: transform 0.3s ease;
+}
+
+.hover-zoom:hover {
+    transform: scale(1.05);
+}
+
+.photo-card {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.photo-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.photo-caption {
+    background: rgba(255, 255, 255, 0.95);
+    font-size: 0.9rem;
+}
+
+.photo-meta {
+    background: rgba(248, 248, 248, 0.95);
+}
+
+/* ========== 首页特效 ========== */
+.hero-section {
+    background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+    animation: gradient-shift 10s ease infinite;
+    background-size: 200% 200%;
+}
+
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+.stat-card {
+    transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: scale(1.05);
+    box-shadow: var(--shadow-md);
+}
+
+.text-romantic {
+    background: linear-gradient(135deg, #FF1493 0%, #FF69B4 50%, #FFB6C1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.section-title {
+    font-weight: 600;
+    padding-bottom: 10px;
+    border-bottom: 3px solid var(--accent-color);
+}
+
+/* ========== 按钮样式 ========== */
+.btn {
+    border-radius: 10px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    padding: 10px 25px;
+}
+
+.btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #FF69B4 0%, #FF1493 100%);
+    border: none;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #90EE90 0%, #32CD32 100%);
+    border: none;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    border: none;
+}
+
+/* ========== 评论区 ========== */
+.comment-item {
+    transition: all 0.2s ease;
+}
+
+.comment-item:hover {
+    background-color: rgba(247, 214, 224, 0.2) !important;
+}
+
+.message-card {
+    transition: all 0.3s ease;
+}
+
+.message-card:hover {
+    transform: translateX(5px);
+    box-shadow: var(--shadow-md) !important;
+}
+
+/* ========== 心形背景动画 ========== */
+.hearts-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+    overflow: hidden;
+}
+
+.heart {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background-color: rgba(255, 182, 193, 0.3);
+    transform: rotate(45deg);
+    animation: float 15s infinite;
+}
+
+.heart::before,
+.heart::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: rgba(255, 182, 193, 0.3);
+}
+
+.heart::before {
+    top: -10px;
+    left: 0;
+}
+
+.heart::after {
+    left: 10px;
+    top: 0;
+}
+
+.heart:nth-child(1) {
+    left: 10%;
+    animation-delay: 0s;
+    animation-duration: 12s;
+}
+
+.heart:nth-child(2) {
+    left: 50%;
+    animation-delay: 3s;
+    animation-duration: 15s;
+}
+
+.heart:nth-child(3) {
+    left: 80%;
+    animation-delay: 6s;
+    animation-duration: 18s;
+}
+
+@keyframes float {
+    0% {
+        top: -10%;
+        opacity: 0;
+    }
+    10% {
+        opacity: 0.3;
+    }
+    90% {
+        opacity: 0.3;
+    }
+    100% {
+        top: 110%;
+        opacity: 0;
+    }
+}
+
+/* ========== 心跳动画 ========== */
+.pulse-heart {
+    animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes heartbeat {
+    0%, 100% {
+        transform: scale(1);
+    }
+    10%, 30% {
+        transform: scale(1.1);
+    }
+    20%, 40% {
+        transform: scale(1.05);
+    }
+}
+
+/* ========== 页脚 ========== */
+.footer {
+    background: linear-gradient(135deg, var(--bg-light-pink) 0%, var(--bg-light-purple) 100%);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.bg-light-purple {
+    background-color: var(--bg-light-purple) !important;
+}
+
+/* ========== 分页 ========== */
+.pagination .page-link {
+    color: #FF1493;
+    border-radius: 8px;
+    margin: 0 4px;
+    border: 1px solid #FFB6C1;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #FF69B4;
+    border-color: #FF69B4;
+}
+
+.pagination .page-link:hover {
+    background-color: var(--primary-color);
+    border-color: #FF69B4;
+}
+
+/* ========== 日记内容样式 ========== */
+.post-content {
+    font-size: 1.1rem;
+    line-height: 1.8;
+    color: var(--text-dark);
+}
+
+.post-content h1, .post-content h2, .post-content h3 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    color: #FF1493;
+}
+
+.post-content p {
+    margin-bottom: 1rem;
+}
+
+.post-content img {
+    max-width: 100%;
+    border-radius: 12px;
+    margin: 20px 0;
+    box-shadow: var(--shadow-sm);
+}
+
+.post-content blockquote {
+    border-left: 4px solid var(--accent-color);
+    padding-left: 20px;
+    margin: 20px 0;
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+.post-content code {
+    background-color: rgba(247, 214, 224, 0.3);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+}
+
+.post-content pre {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    overflow-x: auto;
+}
+
+/* ========== 响应式设计 ========== */
+@media (max-width: 768px) {
+    .hero-section {
+        padding: 2rem 1rem !important;
+    }
+    
+    .display-3 {
+        font-size: 2rem !important;
+    }
+    
+    .display-4 {
+        font-size: 1.5rem !important;
+    }
+    
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+    
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+    
+    .post-content {
+        font-size: 1rem;
+    }
+}
+
+@media (max-width: 576px) {
+    body {
+        font-size: 0.9rem;
+    }
+    
+    .btn {
+        padding: 8px 15px;
+        font-size: 0.9rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+}
+
+/* ========== 加载动画 ========== */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ========== 工具类 ========== */
+.shadow-sm {
+    box-shadow: var(--shadow-sm) !important;
+}
+
+.shadow-md {
+    box-shadow: var(--shadow-md) !important;
+}
+
+.shadow-lg {
+    box-shadow: var(--shadow-lg) !important;
+}
+
+.rounded-lg {
+    border-radius: 15px !important;
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, #FF1493, #FF69B4);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+

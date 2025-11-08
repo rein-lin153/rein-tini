@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}{{ post.title }} - {{ SITE_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <article class="card shadow-lg mb-4">
+            <div class="card-body p-4">
+                <!-- 文章头部 -->
+                <header class="mb-4">
+                    <h1 class="display-5 fw-bold">{{ post.title }}</h1>
+                    <div class="text-muted mt-3">
+                        <i class="fas fa-user"></i> {{ post.author.display_name }}
+                        <span class="mx-2">|</span>
+                        <i class="fas fa-calendar"></i> {{ post.created_at.strftime('%Y年%m月%d日 %H:%M') }}
+                        {% if post.mood %}
+                        <span class="mx-2">|</span>
+                        <span class="badge bg-light text-dark">{{ post.mood }}</span>
+                        {% endif %}
+                        {% if post.is_private %}
+                        <span class="mx-2">|</span>
+                        <span class="badge bg-warning">
+                            <i class="fas fa-lock"></i> 私密
+                        </span>
+                        {% endif %}
+                    </div>
+                </header>
+                
+                <!-- 文章内容 -->
+                <div class="post-content">
+                    {{ post.body_html|safe }}
+                </div>
+                
+                <!-- 操作按钮 -->
+                {% if current_user.is_authenticated and (current_user.id == post.author_id or current_user.is_admin) %}
+                <div class="mt-4 pt-3 border-top">
+                    <a href="{{ url_for('post.edit_post', post_id=post.id) }}" class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> 编辑
+                    </a>
+                    <form method="POST" action="{{ url_for('post.delete_post', post_id=post.id) }}" 
+                          class="d-inline"
+                          onsubmit="return confirm('确定要删除这篇日记吗？');">
+                        <button type="submit" class="btn btn-outline-danger">
+                            <i class="fas fa-trash"></i> 删除
+                        </button>
+                    </form>
+                </div>
+                {% endif %}
+            </div>
+        </article>
+        
+        <!-- 评论区 -->
+        {% if ENABLE_COMMENTS %}
+        <div class="card shadow">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-comments"></i> 评论 ({{ comments|length }})</h5>
+            </div>
+            <div class="card-body">
+                {% if current_user.is_authenticated %}
+                <form method="POST" action="{{ url_for('post.add_comment', post_id=post.id) }}" class="mb-4">
+                    <div class="mb-2">
+                        <textarea name="body" class="form-control" rows="3" placeholder="写下你的想法..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="fas fa-paper-plane"></i> 发表评论
+                    </button>
+                </form>
+                {% else %}
+                <p class="text-muted">请<a href="{{ url_for('auth.login') }}">登录</a>后发表评论</p>
+                {% endif %}
+                
+                {% for comment in comments %}
+                <div class="comment-item p-3 mb-2 border-bottom">
+                    <div class="d-flex justify-content-between">
+                        <strong>{{ comment.author.display_name }}</strong>
+                        <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <p class="mb-0 mt-2">{{ comment.body }}</p>
+                </div>
+                {% else %}
+                <p class="text-muted text-center">暂无评论</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="mt-4">
+            <a href="{{ url_for('post.list_posts') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> 返回日记列表
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

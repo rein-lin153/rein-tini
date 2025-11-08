@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}相册 - {{ SITE_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-images text-primary"></i> 我们的相册</h2>
+    {% if current_user.is_authenticated %}
+    <div>
+        <a href="{{ url_for('album.upload') }}" class="btn btn-primary">
+            <i class="fas fa-upload"></i> 上传照片
+        </a>
+        <a href="{{ url_for('album.batch_upload') }}" class="btn btn-outline-primary">
+            <i class="fas fa-images"></i> 批量上传
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% if photos.items %}
+<!-- 瀑布流相册 -->
+<div class="row row-cols-1 row-cols-md-3 row-cols-lg-4 g-3" id="photoGallery">
+    {% for photo in photos.items %}
+    <div class="col photo-item" data-aos="fade-up">
+        <div class="photo-card">
+            <a href="{{ url_for('album.photo_detail', photo_id=photo.id) }}">
+                <img src="{{ url_for('static', filename='../uploads/thumbs/' + photo.thumb_filename) }}" 
+                     alt="{{ photo.caption or '照片' }}" 
+                     class="img-fluid rounded shadow-sm hover-zoom lazy-load"
+                     loading="lazy">
+            </a>
+            {% if photo.caption %}
+            <div class="photo-caption p-2">
+                <p class="mb-1 small">{{ photo.caption }}</p>
+            </div>
+            {% endif %}
+            <div class="photo-meta p-2">
+                <small class="text-muted">
+                    <i class="fas fa-user"></i> {{ photo.uploader.display_name }}
+                    <span class="float-end">
+                        <i class="fas fa-calendar"></i> {{ photo.created_at.strftime('%Y-%m-%d') }}
+                    </span>
+                </small>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- 分页 -->
+{% if photos.pages > 1 %}
+<nav aria-label="相册分页" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if photos.has_prev %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('album.gallery', page=photos.prev_num) }}">上一页</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">上一页</span>
+        </li>
+        {% endif %}
+        
+        {% for page_num in photos.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+            {% if page_num %}
+                {% if page_num == photos.page %}
+                <li class="page-item active">
+                    <span class="page-link">{{ page_num }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('album.gallery', page=page_num) }}">{{ page_num }}</a>
+                </li>
+                {% endif %}
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+            {% endif %}
+        {% endfor %}
+        
+        {% if photos.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="{{ url_for('album.gallery', page=photos.next_num) }}">下一页</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled">
+            <span class="page-link">下一页</span>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+
+{% else %}
+<div class="text-center py-5">
+    <i class="fas fa-image text-muted" style="font-size: 5rem;"></i>
+    <p class="text-muted mt-3">还没有照片，快来上传第一张照片吧！</p>
+    {% if current_user.is_authenticated %}
+    <a href="{{ url_for('album.upload') }}" class="btn btn-primary">
+        <i class="fas fa-upload"></i> 立即上传
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/lazy-load.js') }}"></script>
+{% endblock %}
+
