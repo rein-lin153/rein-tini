@@ -10,16 +10,30 @@
                 <!-- 文章头部 -->
                 <header class="mb-4">
                     <h1 class="display-5 fw-bold">{{ post.title }}</h1>
-                    <div class="text-muted mt-3">
-                        <i class="fas fa-user"></i> {{ post.author.display_name }}
-                        <span class="mx-2">|</span>
-                        <i class="fas fa-calendar"></i> {{ post.created_at.strftime('%Y年%m月%d日 %H:%M') }}
+                    <div class="text-muted mt-3 d-flex flex-wrap align-items-center gap-2">
+                        <span>
+                            <i class="fas fa-user"></i> {{ post.author.display_name }}
+                        </span>
+                        <span class="mx-1">|</span>
+                        <span>
+                            <i class="fas fa-calendar"></i> {{ post.created_at.strftime('%Y年%m月%d日 %H:%M') }}
+                        </span>
+                        <span class="mx-1">|</span>
+                        <span>
+                            <i class="fas fa-file-word"></i> {{ post.word_count }} 字
+                        </span>
+                        <span class="mx-1">|</span>
+                        <span>
+                            <i class="fas fa-clock"></i> 约 {{ post.reading_time }} 分钟
+                        </span>
                         {% if post.mood %}
-                        <span class="mx-2">|</span>
-                        <span class="badge bg-light text-dark">{{ post.mood }}</span>
+                        <span class="mx-1">|</span>
+                        <span class="badge bg-light text-dark">
+                            <i class="fas fa-smile"></i> {{ post.mood }}
+                        </span>
                         {% endif %}
                         {% if post.is_private %}
-                        <span class="mx-2">|</span>
+                        <span class="mx-1">|</span>
                         <span class="badge bg-warning">
                             <i class="fas fa-lock"></i> 私密
                         </span>
@@ -28,7 +42,7 @@
                 </header>
                 
                 <!-- 文章内容 -->
-                <div class="post-content">
+                <div class="post-content article-content">
                     {{ post.body_html|safe }}
                 </div>
                 
@@ -92,5 +106,245 @@
         </div>
     </div>
 </div>
+
+<!-- 图片查看模态框 -->
+<div class="modal fade" id="imageViewerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-white" id="imageModalTitle">查看图片</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-0 position-relative">
+                <!-- 加载动画 -->
+                <div id="imageLoader" class="py-5">
+                    <div class="spinner-border text-light" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                </div>
+                <!-- 图片容器 -->
+                <img id="modalImage" 
+                     src="" 
+                     alt="" 
+                     class="img-fluid" 
+                     style="max-height: 85vh; display: none; cursor: zoom-in;">
+                <!-- 图片导航按钮 -->
+                <button type="button" id="prevImageBtn" class="btn btn-dark position-absolute top-50 start-0 translate-middle-y ms-2" style="display: none; opacity: 0.7;">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button type="button" id="nextImageBtn" class="btn btn-dark position-absolute top-50 end-0 translate-middle-y me-2" style="display: none; opacity: 0.7;">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+            <div class="modal-footer border-0 bg-dark justify-content-between">
+                <div>
+                    <span id="imageCounter" class="text-white"></span>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> 关闭
+                    </button>
+                    <a id="downloadImageBtn" href="#" download class="btn btn-primary">
+                        <i class="fas fa-download"></i> 下载
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/**
+ * 文章图片查看器功能
+ * 自动识别文章内容中的所有图片并添加点击放大功能
+ */
+
+// 图片查看器状态
+let imageModal;
+let articleImages = [];
+let currentImageIndex = 0;
+
+// 页面加载完成后初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 初始化模态框
+    const modalElement = document.getElementById('imageViewerModal');
+    if (modalElement) {
+        imageModal = new bootstrap.Modal(modalElement);
+        
+        // 监听模态框关闭事件
+        modalElement.addEventListener('hidden.bs.modal', function() {
+            const modalImage = document.getElementById('modalImage');
+            if (modalImage) {
+                modalImage.src = '';
+                modalImage.style.display = 'none';
+            }
+        });
+    }
+    
+    // 查找文章内容中的所有图片
+    const articleContent = document.querySelector('.article-content');
+    if (articleContent) {
+        initArticleImages(articleContent);
+    }
+    
+    // 图片导航按钮事件
+    const prevBtn = document.getElementById('prevImageBtn');
+    const nextBtn = document.getElementById('nextImageBtn');
+    
+    if (prevBtn) {
+        prevBtn.addEventListener('click', () => showPrevImage());
+    }
+    if (nextBtn) {
+        nextBtn.addEventListener('click', () => showNextImage());
+    }
+    
+    // 键盘快捷键
+    document.addEventListener('keydown', function(e) {
+        if (modalElement && modalElement.classList.contains('show')) {
+            if (e.key === 'ArrowLeft') {
+                showPrevImage();
+            } else if (e.key === 'ArrowRight') {
+                showNextImage();
+            } else if (e.key === 'Escape') {
+                imageModal.hide();
+            }
+        }
+    });
+});
+
+/**
+ * 初始化文章中的图片
+ */
+function initArticleImages(container) {
+    const images = container.querySelectorAll('img');
+    articleImages = Array.from(images);
+    
+    images.forEach((img, index) => {
+        // 为每个图片添加样式
+        img.style.cursor = 'pointer';
+        img.style.maxWidth = '100%';
+        img.style.height = 'auto';
+        img.classList.add('rounded', 'shadow-sm', 'my-3');
+        
+        // 添加点击事件
+        img.addEventListener('click', function() {
+            currentImageIndex = index;
+            openImageViewer(img.src, img.alt || '图片 ' + (index + 1));
+        });
+        
+        // 添加悬停提示
+        img.title = '点击查看大图';
+    });
+}
+
+/**
+ * 打开图片查看器
+ */
+function openImageViewer(imageSrc, imageAlt) {
+    const modalImage = document.getElementById('modalImage');
+    const modalTitle = document.getElementById('imageModalTitle');
+    const loader = document.getElementById('imageLoader');
+    const downloadBtn = document.getElementById('downloadImageBtn');
+    const counter = document.getElementById('imageCounter');
+    
+    // 设置标题
+    modalTitle.textContent = imageAlt || '查看图片';
+    
+    // 显示加载器
+    loader.style.display = 'block';
+    modalImage.style.display = 'none';
+    
+    // 更新图片计数
+    if (articleImages.length > 1) {
+        counter.textContent = `${currentImageIndex + 1} / ${articleImages.length}`;
+    } else {
+        counter.textContent = '';
+    }
+    
+    // 更新导航按钮显示
+    updateNavigationButtons();
+    
+    // 设置下载按钮
+    if (downloadBtn) {
+        downloadBtn.href = imageSrc;
+        const filename = imageSrc.split('/').pop();
+        downloadBtn.download = filename;
+    }
+    
+    // 预加载图片
+    const img = new Image();
+    img.onload = function() {
+        modalImage.src = imageSrc;
+        modalImage.alt = imageAlt || '图片';
+        loader.style.display = 'none';
+        modalImage.style.display = 'block';
+        
+        // 淡入效果
+        modalImage.style.opacity = '0';
+        setTimeout(() => {
+            modalImage.style.transition = 'opacity 0.3s ease';
+            modalImage.style.opacity = '1';
+        }, 10);
+    };
+    
+    img.onerror = function() {
+        loader.innerHTML = '<p class="text-danger">图片加载失败</p>';
+    };
+    
+    img.src = imageSrc;
+    
+    // 显示模态框
+    imageModal.show();
+}
+
+/**
+ * 显示上一张图片
+ */
+function showPrevImage() {
+    if (articleImages.length <= 1) return;
+    
+    currentImageIndex--;
+    if (currentImageIndex < 0) {
+        currentImageIndex = articleImages.length - 1;
+    }
+    
+    const img = articleImages[currentImageIndex];
+    openImageViewer(img.src, img.alt || '图片 ' + (currentImageIndex + 1));
+}
+
+/**
+ * 显示下一张图片
+ */
+function showNextImage() {
+    if (articleImages.length <= 1) return;
+    
+    currentImageIndex++;
+    if (currentImageIndex >= articleImages.length) {
+        currentImageIndex = 0;
+    }
+    
+    const img = articleImages[currentImageIndex];
+    openImageViewer(img.src, img.alt || '图片 ' + (currentImageIndex + 1));
+}
+
+/**
+ * 更新导航按钮状态
+ */
+function updateNavigationButtons() {
+    const prevBtn = document.getElementById('prevImageBtn');
+    const nextBtn = document.getElementById('nextImageBtn');
+    
+    if (articleImages.length > 1) {
+        if (prevBtn) prevBtn.style.display = 'block';
+        if (nextBtn) nextBtn.style.display = 'block';
+    } else {
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+    }
+}
+</script>
 {% endblock %}
 

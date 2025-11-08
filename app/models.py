@@ -59,6 +59,22 @@ class Post(db.Model):
     comments = db.relationship('Comment', backref='post', lazy='dynamic', 
                              foreign_keys='Comment.post_id', cascade='all, delete-orphan')
     
+    @property
+    def word_count(self):
+        """计算字数（中文字符 + 英文单词）"""
+        import re
+        # 中文字符
+        chinese_chars = len(re.findall(r'[\u4e00-\u9fff]', self.body))
+        # 英文单词（简单统计，按空格分隔）
+        english_words = len(re.findall(r'[a-zA-Z]+', self.body))
+        return chinese_chars + english_words
+    
+    @property
+    def reading_time(self):
+        """估算阅读时间（分钟），假设每分钟阅读 300 字"""
+        minutes = max(1, round(self.word_count / 300))
+        return minutes
+    
     def __repr__(self):
         return '<Post {}>'.format(self.title)
 

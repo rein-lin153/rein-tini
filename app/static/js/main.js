@@ -172,27 +172,34 @@ imageInputs.forEach(function(input) {
 /**
  * 返回顶部按钮
  */
-window.addEventListener('scroll', function() {
-    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-    let backToTop = document.getElementById('backToTop');
-    
-    if (scrollTop > 300) {
-        if (!backToTop) {
-            backToTop = document.createElement('button');
-            backToTop.id = 'backToTop';
-            backToTop.className = 'btn btn-primary rounded-circle position-fixed';
-            backToTop.style.cssText = 'bottom: 30px; right: 30px; width: 50px; height: 50px; z-index: 1000;';
-            backToTop.innerHTML = '<i class="fas fa-arrow-up"></i>';
-            backToTop.onclick = function() {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            };
-            document.body.appendChild(backToTop);
+const backToTopBtn = document.getElementById('backToTopBtn');
+
+if (backToTopBtn) {
+    // 监听滚动事件，显示/隐藏按钮
+    window.addEventListener('scroll', function() {
+        const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+        
+        if (scrollTop > 300) {
+            backToTopBtn.style.display = 'block';
+            backToTopBtn.style.opacity = '1';
+        } else {
+            backToTopBtn.style.opacity = '0';
+            setTimeout(() => {
+                if (scrollTop <= 300) {
+                    backToTopBtn.style.display = 'none';
+                }
+            }, 300);
         }
-        backToTop.style.display = 'block';
-    } else if (backToTop) {
-        backToTop.style.display = 'none';
-    }
-});
+    });
+    
+    // 点击按钮返回顶部
+    backToTopBtn.addEventListener('click', function() {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+}
 
 /**
  * 确认删除
