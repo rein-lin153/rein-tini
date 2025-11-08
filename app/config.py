@@ -16,7 +16,7 @@ class Config:
     
     # ========== 数据库配置 ==========
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URI') or \
-        'sqlite:///' + os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance', 'heartmoments.db')
+        'sqlite:///' + os.path.abspath(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'instance', 'heartmoments.db'))
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ECHO = os.environ.get('SQLALCHEMY_ECHO', 'False').lower() == 'true'
     
