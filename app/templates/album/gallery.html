@@ -23,7 +23,9 @@
     {% for photo in photos.items %}
     <div class="col photo-item" data-aos="fade-up">
         <div class="photo-card">
-            <a href="{{ url_for('album.photo_detail', photo_id=photo.id) }}">
+            <!-- 点击缩略图放大查看 -->
+            <a href="javascript:void(0)" 
+               onclick="openPhotoModal('{{ url_for('static', filename='../uploads/photos/' + photo.filename) }}', '{{ photo.caption or '照片' }}', {{ photo.id }})">
                 <img src="{{ url_for('static', filename='../uploads/thumbs/' + photo.thumb_filename) }}" 
                      alt="{{ photo.caption or '照片' }}" 
                      class="img-fluid rounded shadow-sm hover-zoom lazy-load"
@@ -41,10 +43,49 @@
                         <i class="fas fa-calendar"></i> {{ photo.created_at.strftime('%Y-%m-%d') }}
                     </span>
                 </small>
+                <!-- 详情链接 -->
+                <a href="{{ url_for('album.photo_detail', photo_id=photo.id) }}" 
+                   class="btn btn-sm btn-outline-primary mt-2 w-100">
+                    <i class="fas fa-info-circle"></i> 详情
+                </a>
             </div>
         </div>
     </div>
     {% endfor %}
+</div>
+
+<!-- 图片查看模态框 -->
+<div class="modal fade" id="photoViewerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-white" id="photoModalTitle"></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center p-0">
+                <!-- 加载动画 -->
+                <div id="photoLoader" class="py-5">
+                    <div class="spinner-border text-light" role="status">
+                        <span class="visually-hidden">加载中...</span>
+                    </div>
+                </div>
+                <!-- 图片容器 -->
+                <img id="photoModalImage" 
+                     src="" 
+                     alt="" 
+                     class="img-fluid" 
+                     style="max-height: 85vh; display: none;">
+            </div>
+            <div class="modal-footer border-0 bg-dark">
+                <a id="photoDetailLink" href="#" class="btn btn-primary">
+                    <i class="fas fa-info-circle"></i> 查看详情
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> 关闭
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- 分页 -->
@@ -106,5 +147,76 @@
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/lazy-load.js') }}"></script>
+
+<script>
+// 图片查看器功能
+let photoModal;
+let currentPhotoId;
+
+// 初始化模态框
+document.addEventListener('DOMContentLoaded', function() {
+    photoModal = new bootstrap.Modal(document.getElementById('photoViewerModal'));
+    
+    // 监听键盘事件
+    document.addEventListener('keydown', function(e) {
+        if (document.getElementById('photoViewerModal').classList.contains('show')) {
+            if (e.key === 'Escape') {
+                photoModal.hide();
+            }
+        }
+    });
+});
+
+// 打开图片查看模态框
+function openPhotoModal(imageUrl, caption, photoId) {
+    currentPhotoId = photoId;
+    
+    const modalTitle = document.getElementById('photoModalTitle');
+    const modalImage = document.getElementById('photoModalImage');
+    const loader = document.getElementById('photoLoader');
+    const detailLink = document.getElementById('photoDetailLink');
+    
+    // 设置标题和详情链接
+    modalTitle.textContent = caption || '照片';
+    detailLink.href = `/album/${photoId}`;
+    
+    // 显示加载动画，隐藏图片
+    loader.style.display = 'block';
+    modalImage.style.display = 'none';
+    modalImage.src = '';
+    
+    // 打开模态框
+    photoModal.show();
+    
+    // 预加载图片
+    const img = new Image();
+    img.onload = function() {
+        modalImage.src = imageUrl;
+        modalImage.alt = caption || '照片';
+        loader.style.display = 'none';
+        modalImage.style.display = 'block';
+        
+        // 添加淡入动画
+        modalImage.style.opacity = '0';
+        setTimeout(() => {
+            modalImage.style.transition = 'opacity 0.3s ease';
+            modalImage.style.opacity = '1';
+        }, 10);
+    };
+    
+    img.onerror = function() {
+        loader.innerHTML = '<p class="text-danger">图片加载失败</p>';
+    };
+    
+    img.src = imageUrl;
+}
+
+// 模态框关闭时重置
+document.getElementById('photoViewerModal').addEventListener('hidden.bs.modal', function() {
+    const modalImage = document.getElementById('photoModalImage');
+    modalImage.src = '';
+    modalImage.style.display = 'none';
+});
+</script>
 {% endblock %}
 
