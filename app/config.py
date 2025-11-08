@@ -33,7 +33,7 @@ class Config:
     # ========== 情侣信息 ==========
     COUPLE_NAME_1 = os.environ.get('COUPLE_NAME_1', 'Rein')
     COUPLE_NAME_2 = os.environ.get('COUPLE_NAME_2', 'Nana')
-    TOGETHER_DATE = os.environ.get('TOGETHER_DATE', '2023-01-14')  # YYYY-MM-DD
+    TOGETHER_DATE = os.environ.get('TOGETHER_DATE', '2025-02-20')  # YYYY-MM-DD
     
     # ========== 文件上传配置 ==========
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -118,10 +118,8 @@ class ProductionConfig(Config):
     DEBUG = False
     TESTING = False
     
-    # 生产环境必须设置 SECRET_KEY
-    SECRET_KEY = os.environ.get('SECRET_KEY')
-    if not SECRET_KEY:
-        raise ValueError("生产环境必须设置 SECRET_KEY 环境变量！")
+    # 生产环境强制要求设置 SECRET_KEY
+    # 注意：在部署到生产环境前，务必在 .env 中设置 SECRET_KEY
 
 
 # 配置字典

@@ -10,13 +10,13 @@ import getpass
 # 添加项目根目录到路径
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# 加载环境变量（必须在导入 app 之前！）
+from dotenv import load_dotenv
+load_dotenv()
+
 from app import create_app
 from app.extensions import db
 from app.models import User
-from dotenv import load_dotenv
-
-# 加载环境变量
-load_dotenv()
 
 def create_admin():
     """创建管理员用户"""
