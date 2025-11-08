@@ -1,0 +1,35 @@
+[Unit]
+Description=HeartMoments Gunicorn Service
+After=network.target
+
+[Service]
+Type=notify
+User=opc
+Group=opc
+RuntimeDirectory=gunicorn
+WorkingDirectory=/home/opc/rein-tini
+Environment="PATH=/home/opc/rein-tini/venv/bin"
+EnvironmentFile=/home/opc/rein-tini/.env
+ExecStart=/home/opc/rein-tini/venv/bin/gunicorn \
+    --workers 2 \
+    --threads 2 \
+    --worker-class gthread \
+    --worker-tmp-dir /dev/shm \
+    --bind unix:/home/opc/rein-tini/heartmoments.sock \
+    --access-logfile /home/opc/rein-tini/logs/gunicorn-access.log \
+    --error-logfile /home/opc/rein-tini/logs/gunicorn-error.log \
+    --log-level info \
+    --timeout 120 \
+    --graceful-timeout 30 \
+    --keep-alive 5 \
+    "wsgi:app"
+ExecReload=/bin/kill -s HUP $MAINPID
+KillMode=mixed
+KillSignal=SIGTERM
+PrivateTmp=true
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+
