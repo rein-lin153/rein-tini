@@ -70,8 +70,11 @@ def ensure_directories(app):
     
     for directory in directories:
         if not os.path.exists(directory):
-            os.makedirs(directory)
-            app.logger.info('创建目录: {}'.format(directory))
+            try:
+                os.makedirs(directory, mode=0o755)
+                app.logger.info('创建目录: {}'.format(directory))
+            except OSError as e:
+                app.logger.error('创建目录失败 {}: {}'.format(directory, str(e)))
 
 
 def init_extensions(app):

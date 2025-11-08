@@ -41,7 +41,7 @@ def get_next_anniversary(start_date_str, timezone='Asia/Shanghai'):
     """
     try:
         tz = pytz.timezone(timezone)
-        start_date = datetime.strptime(start_date_str, '%Y-%m-% d').date()
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d').date()
         today = datetime.now(tz).date()
         days_together = (today - start_date).days
         
