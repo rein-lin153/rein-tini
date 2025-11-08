@@ -20,12 +20,41 @@ from app.models import enable_wal_mode
 
 def init_database():
     """初始化数据库"""
+    print('=' * 60)
+    print('💖 心语时光 - 数据库初始化')
+    print('=' * 60)
+    
+    # 在创建 app 之前，先确保 instance 目录存在
+    import os
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    instance_dir = os.path.join(project_root, 'instance')
+    
+    if not os.path.exists(instance_dir):
+        print(f'\n创建 instance 目录: {instance_dir}')
+        os.makedirs(instance_dir, mode=0o755)
+    else:
+        print(f'\n✓ instance 目录已存在: {instance_dir}')
+    
+    # 检查目录权限
+    try:
+        test_file = os.path.join(instance_dir, '.write_test')
+        with open(test_file, 'w') as f:
+            f.write('test')
+        os.remove(test_file)
+        print(f'✓ instance 目录可写')
+    except Exception as e:
+        print(f'✗ instance 目录不可写: {e}')
+        print(f'\n请运行以下命令修复权限：')
+        print(f'  chmod 755 {instance_dir}')
+        print(f'  chown $USER:$USER {instance_dir}')
+        return
+    
+    print('\n正在创建 Flask 应用...')
     app = create_app()
     
     with app.app_context():
-        print('=' * 60)
-        print('💖 心语时光 - 数据库初始化')
-        print('=' * 60)
+        print(f'数据库 URI: {app.config["SQLALCHEMY_DATABASE_URI"]}')
+        print()
         
         # 启用 WAL 模式（仅 SQLite）
         if 'sqlite' in app.config['SQLALCHEMY_DATABASE_URI']:

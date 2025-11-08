@@ -31,7 +31,8 @@ def create_app(config_name=None):
     
     app.config.from_object(get_config())
     
-    # 确保必要的目录存在
+    # 确保必要的目录存在（必须在初始化扩展之前！）
+    # 特别是 instance 目录，SQLite 数据库需要它
     ensure_directories(app)
     
     # 初始化扩展
@@ -84,9 +85,8 @@ def init_extensions(app):
     csrf.init_app(app)
     limiter.init_app(app)
     
-    # 在应用上下文中创建数据库表
-    with app.app_context():
-        db.create_all()
+    # 注意：不在这里创建数据库表
+    # 数据库表的创建应该由 init_db.py 脚本负责
 
 
 def register_blueprints(app):
