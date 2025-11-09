@@ -355,8 +355,20 @@
     </div>
 </div>
 
-<!-- 隐藏的 token 字段 -->
+<!-- 隐藏的 token 字段和配置 -->
 <input type="hidden" id="adminToken" value="{{ admin_token }}">
+<script type="text/javascript">
+    // 注入配置到全局（在脚本加载前执行）
+    (function() {
+        if (typeof window.APP_CONFIG === 'undefined') {
+            window.APP_CONFIG = {};
+        }
+        window.APP_CONFIG.MAX_MUSIC_SIZE = {{ max_music_size | default(31457280) }}; // 30MB 默认值
+        window.APP_CONFIG.MAX_CONTENT_LENGTH = {{ max_content_length | default(31457280) }}; // 30MB 默认值
+        window.APP_CONFIG.MAX_COVER_SIZE = {{ max_cover_size | default(2097152) }}; // 2MB 默认值
+        window.APP_CONFIG.MAX_BACKGROUND_SIZE = {{ max_content_length | default(5242880) }}; // 5MB 默认值（背景图片）
+    })();
+</script>
 {% endblock %}
 
 {% block extra_js %}

@@ -14,6 +14,13 @@ from PIL import Image
 
 logger = logging.getLogger(__name__)
 
+# 确保 logger 已配置
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
+
 
 def save_music_file(file, music_folder: str, max_size: int = 30 * 1024 * 1024) -> Tuple[Optional[str], Optional[str], Optional[int]]:
     """

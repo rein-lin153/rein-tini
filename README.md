@@ -68,6 +68,11 @@
 
 ---
 
+## 📚 文档
+
+- [上传配置说明](docs/UPLOAD_CONFIG.md) - Nginx 和 Gunicorn 配置，文件大小限制设置
+- [测试清单](docs/TESTING.md) - 完整的回归测试步骤和验证方法
+
 ## 🚀 快速开始
 
 ### 1. 克隆项目

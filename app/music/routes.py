@@ -332,5 +332,12 @@ def admin_manager():
         return redirect(url_for('main.index'))
     
     admin_token = current_app.config.get('ADMIN_UPLOAD_TOKEN', 'changeme123')
-    return render_template('admin/music_manager.html', admin_token=admin_token)
+    max_music_size = current_app.config.get('MAX_MUSIC_SIZE', 30 * 1024 * 1024)
+    max_content_length = current_app.config.get('MAX_CONTENT_LENGTH', 30 * 1024 * 1024)
+    max_cover_size = current_app.config.get('MAX_COVER_SIZE', 2 * 1024 * 1024)
+    return render_template('admin/music_manager.html', 
+                         admin_token=admin_token,
+                         max_music_size=max_music_size,
+                         max_content_length=max_content_length,
+                         max_cover_size=max_cover_size)
 

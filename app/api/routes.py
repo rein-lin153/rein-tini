@@ -328,6 +328,18 @@ def upload_background():
         if file.filename == '':
             return jsonify({'error': '未选择文件'}), 400
         
+        # 提前检查请求大小（如果可用）
+        max_content_length = current_app.config.get('MAX_CONTENT_LENGTH', 30 * 1024 * 1024)
+        if hasattr(request, 'content_length') and request.content_length:
+            if request.content_length > max_content_length:
+                current_app.logger.warning(f'背景上传请求内容长度超过限制: {request.content_length} bytes')
+                return jsonify({
+                    'success': False,
+                    'error': '文件过大',
+                    'message': f'文件大小超过限制 (最大 {max_content_length / (1024 * 1024):.2f}MB)',
+                    'max_bytes': max_content_length
+                }), 413
+        
         # 检查文件类型
         allowed_extensions = {'jpg', 'jpeg', 'png'}
         file_ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
@@ -340,8 +352,24 @@ def upload_background():
         file_size = file.tell()
         file.seek(0)
         
+        # 记录上传请求信息（脱敏）
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
+        if client_ip and client_ip != 'unknown':
+            ip_parts = client_ip.split('.')
+            if len(ip_parts) == 4:
+                client_ip = f"{ip_parts[0]}.{ip_parts[1]}.*.*"
+        
+        current_app.logger.info(f'背景上传请求: 文件名={file.filename}, 大小={file_size} bytes, 来源IP={client_ip}')
+        
         if file_size > max_size:
-            return jsonify({'error': '文件过大，最大 5MB'}), 400
+            current_app.logger.warning(f'背景文件过大: {file.filename}, 大小={file_size} bytes, 限制={max_size} bytes, 来源IP={client_ip}')
+            return jsonify({
+                'success': False,
+                'error': '文件过大',
+                'message': f'文件大小 ({file_size / (1024 * 1024):.2f}MB) 超过限制 (最大 {max_size / (1024 * 1024):.2f}MB)',
+                'max_bytes': max_size,
+                'file_size': file_size
+            }), 413
         
         # 保存文件
         try:

@@ -1,5 +1,57 @@
 // 心语时光 - 主 JavaScript 文件
 
+// 全局错误处理（捕获未处理的 Promise 拒绝和错误）
+window.addEventListener('error', function(event) {
+    // 忽略来自浏览器扩展的错误（如 content.js）
+    if (event.filename && (
+        event.filename.includes('chrome-extension://') || 
+        event.filename.includes('moz-extension://') ||
+        event.filename.includes('safari-extension://')
+    )) {
+        console.debug('忽略浏览器扩展错误:', event.filename);
+        return;
+    }
+    
+    // 记录其他错误
+    console.error('全局错误:', {
+        message: event.message,
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+        error: event.error
+    });
+}, true);
+
+// 捕获未处理的 Promise 拒绝
+window.addEventListener('unhandledrejection', function(event) {
+    // 忽略来自浏览器扩展的 Promise 拒绝
+    const error = event.reason;
+    if (error && typeof error === 'object') {
+        const errorString = JSON.stringify(error);
+        if (errorString.includes('chrome-extension://') || 
+            errorString.includes('moz-extension://') ||
+            errorString.includes('content.js')) {
+            console.debug('忽略浏览器扩展 Promise 拒绝');
+            event.preventDefault(); // 阻止默认错误处理
+            return;
+        }
+    }
+    
+    // 记录其他 Promise 拒绝
+    console.error('未处理的 Promise 拒绝:', {
+        reason: event.reason,
+        promise: event.promise
+    });
+    
+    // 对于已知的 message port 错误，静默处理
+    if (event.reason && typeof event.reason === 'string' && 
+        event.reason.includes('message port closed')) {
+        console.debug('Message port 已关闭（可能是浏览器扩展），静默处理');
+        event.preventDefault();
+        return;
+    }
+});
+
 // 页面加载完成后执行
 document.addEventListener('DOMContentLoaded', function() {
     // 初始化所有功能
@@ -412,12 +464,32 @@ function loadPage(url) {
             if (src && !document.querySelector(`script[src="${src}"]`)) {
                 const newScript = document.createElement('script');
                 newScript.src = src;
+                newScript.async = true;
                 document.body.appendChild(newScript);
             }
         });
         
         // 触发自定义事件，让其他脚本知道页面已更新
-        window.dispatchEvent(new CustomEvent('pageLoaded', { detail: { url } }));
+        // 先触发 pageLoaded（向后兼容）
+        window.dispatchEvent(new CustomEvent('pageLoaded', { 
+            detail: { url, timestamp: Date.now() },
+            bubbles: true,
+            cancelable: true
+        }));
+        
+        // 再触发 content:loaded（统一的事件名称）
+        // 延迟一点确保 DOM 完全更新
+        setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('content:loaded', { 
+                detail: { 
+                    url: url || window.location.href,
+                    timestamp: Date.now(),
+                    target: currentMainContent
+                },
+                bubbles: true,
+                cancelable: true
+            }));
+        }, 50);
         
         // 滚动到顶部（但不影响播放器）
         window.scrollTo({ top: 0, behavior: 'smooth' });

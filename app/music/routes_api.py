@@ -281,6 +281,18 @@ def create_music():
         if not is_admin:
             return jsonify({'error': error_msg}), 403
         
+        # 提前检查请求大小（如果可用）
+        max_content_length = current_app.config.get('MAX_CONTENT_LENGTH', 30 * 1024 * 1024)
+        if hasattr(request, 'content_length') and request.content_length:
+            if request.content_length > max_content_length:
+                current_app.logger.warning(f'请求内容长度超过限制: {request.content_length} bytes (最大: {max_content_length} bytes)')
+                return jsonify({
+                    'success': False,
+                    'error': '文件过大',
+                    'message': f'文件大小超过限制 (最大 {max_content_length / (1024 * 1024):.2f}MB)',
+                    'max_bytes': max_content_length
+                }), 413
+        
         # 检查文件
         if 'file' not in request.files:
             return jsonify({'error': '未选择音乐文件'}), 400
@@ -290,6 +302,16 @@ def create_music():
         
         if music_file.filename == '':
             return jsonify({'error': '未选择音乐文件'}), 400
+        
+        # 记录上传请求信息（脱敏）
+        client_ip = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR', 'unknown'))
+        # 脱敏处理 IP
+        if client_ip and client_ip != 'unknown':
+            ip_parts = client_ip.split('.')
+            if len(ip_parts) == 4:
+                client_ip = f"{ip_parts[0]}.{ip_parts[1]}.*.*"
+        
+        current_app.logger.info(f'音乐上传请求: 文件名={music_file.filename}, 来源IP={client_ip}')
         
         # 获取配置
         music_folder = current_app.config['MUSIC_FOLDER']
@@ -301,10 +323,25 @@ def create_music():
         os.makedirs(music_folder, exist_ok=True)
         os.makedirs(cover_folder, exist_ok=True)
         
+        # 检查文件大小（在上传前）
+        music_file.seek(0, os.SEEK_END)
+        music_file_size = music_file.tell()
+        music_file.seek(0)
+        
+        if music_file_size > max_music_size:
+            current_app.logger.warning(f'音乐文件过大: {music_file.filename}, 大小={music_file_size} bytes, 限制={max_music_size} bytes, 来源IP={client_ip}')
+            return jsonify({
+                'success': False,
+                'error': '文件过大',
+                'message': f'文件大小 ({music_file_size / (1024 * 1024):.2f}MB) 超过限制 (最大 {max_music_size / (1024 * 1024):.2f}MB)',
+                'max_bytes': max_music_size,
+                'file_size': music_file_size
+            }), 413
+        
         # 保存音乐文件
         filename, error, file_size = save_music_file(music_file, music_folder, max_music_size)
         if error:
-            current_app.logger.error(f'保存音乐文件失败: {error}')
+            current_app.logger.error(f'保存音乐文件失败: {error}, 文件名={music_file.filename}, 来源IP={client_ip}')
             return jsonify({'error': error}), 400
         
         # 获取音频时长

@@ -184,8 +184,21 @@ class BackgroundManager {
             return;
         }
         
+        // 获取配置的最大文件大小（背景图片默认 5MB）
+        const maxBackgroundSize = window.APP_CONFIG?.MAX_BACKGROUND_SIZE || window.APP_CONFIG?.MAX_CONTENT_LENGTH || (5 * 1024 * 1024); // 默认 5MB
+        const backgroundFile = fileInput.files[0];
+        const backgroundFileSize = backgroundFile.size;
+        
+        // 客户端文件大小检查
+        if (backgroundFileSize > maxBackgroundSize) {
+            const maxSizeMB = (maxBackgroundSize / (1024 * 1024)).toFixed(2);
+            const fileSizeMB = (backgroundFileSize / (1024 * 1024)).toFixed(2);
+            this.showToast(`文件大小 (${fileSizeMB}MB) 超过限制 (${maxSizeMB}MB)，请压缩或更换文件`, 'error');
+            return;
+        }
+        
         const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        formData.append('file', backgroundFile);
         
         // 显示进度条
         progressBar.style.display = 'block';
@@ -229,13 +242,36 @@ class BackgroundManager {
                 } else {
                     // 尝试解析错误响应
                     let errorMsg = '上传失败';
+                    const maxBackgroundSize = window.APP_CONFIG?.MAX_BACKGROUND_SIZE || window.APP_CONFIG?.MAX_CONTENT_LENGTH || (5 * 1024 * 1024);
+                    
                     try {
-                        const error = JSON.parse(xhr.responseText);
-                        errorMsg = error.error || errorMsg;
+                        // 检查响应类型
+                        const contentType = xhr.getResponseHeader('Content-Type') || '';
+                        if (contentType.includes('application/json')) {
+                            const error = JSON.parse(xhr.responseText);
+                            errorMsg = error.error || error.message || errorMsg;
+                            
+                            // 特殊处理 413 错误
+                            if (xhr.status === 413) {
+                                const maxSizeMB = (maxBackgroundSize / (1024 * 1024)).toFixed(2);
+                                errorMsg = `文件过大：文件大小超过服务器限制 (${maxSizeMB}MB)。${error.max_bytes ? `最大允许: ${(error.max_bytes / (1024 * 1024)).toFixed(2)}MB` : ''}`;
+                            }
+                        } else if (xhr.responseText.includes('<!DOCTYPE')) {
+                            // HTML 错误页面
+                            if (xhr.status === 413) {
+                                const maxSizeMB = (maxBackgroundSize / (1024 * 1024)).toFixed(2);
+                                errorMsg = `文件过大：文件大小超过服务器限制 (${maxSizeMB}MB)。请检查 Nginx 或其他代理服务器的 client_max_body_size 配置。`;
+                            } else {
+                                errorMsg = `上传失败: HTTP ${xhr.status} (服务器返回了错误页面)`;
+                            }
+                        } else {
+                            errorMsg = `上传失败: HTTP ${xhr.status}`;
+                        }
                     } catch (e) {
-                        // 如果不是 JSON，可能是 HTML 错误页面
-                        if (xhr.responseText.includes('<!DOCTYPE')) {
-                            errorMsg = `上传失败: HTTP ${xhr.status} (服务器返回了错误页面)`;
+                        console.error('解析错误响应失败:', e);
+                        if (xhr.status === 413) {
+                            const maxSizeMB = (maxBackgroundSize / (1024 * 1024)).toFixed(2);
+                            errorMsg = `文件过大：文件大小超过服务器限制 (${maxSizeMB}MB)`;
                         } else {
                             errorMsg = `上传失败: HTTP ${xhr.status}`;
                         }
@@ -405,49 +441,161 @@ class BackgroundManager {
 
 // 初始化
 let backgroundManager;
+let backgroundManagerInitialized = false;
 
 // 初始化背景管理器（可被外部调用）
-function initBackgroundManager() {
-    // 检查必要的元素是否存在
-    const adminToken = document.getElementById('adminToken');
+function initBackgroundManager(options = {}) {
+    const { retryCount = 0, maxRetries = 2 } = options;
+    const currentUrl = window.location.href;
+    const timestamp = new Date().toISOString();
+    
+    // 检查是否已经初始化过（防止重复绑定）
+    const mainContent = document.querySelector('main.container#mainContent') || document.querySelector('main.container');
     const backgroundPanel = document.getElementById('background-panel');
     
-    if (!adminToken || !backgroundPanel) {
-        console.warn('背景管理页面元素未找到，跳过初始化');
+    if (backgroundPanel && backgroundPanel._backgroundManagerInitialized) {
+        console.debug(`[${timestamp}] 背景管理器已初始化，跳过重复初始化`);
+        // 如果已经初始化，只是刷新数据
+        if (backgroundManager) {
+            backgroundManager.loadBackgrounds();
+            backgroundManager.loadDefaultBackground();
+        }
         return;
     }
     
-    // 如果已经存在实例，先销毁
-    if (backgroundManager) {
-        backgroundManager = null;
+    // 检查必要的元素是否存在
+    const adminToken = document.getElementById('adminToken');
+    const backgroundListContainer = document.getElementById('backgroundListContainer');
+    const defaultBackgroundPreview = document.getElementById('defaultBackgroundPreview');
+    
+    // 详细日志记录
+    if (!adminToken || !backgroundPanel) {
+        console.debug(`[${timestamp}] 背景管理页面初始化检查失败:`, {
+            url: currentUrl,
+            selectors: {
+                adminToken: '#adminToken',
+                backgroundPanel: '#background-panel',
+                backgroundListContainer: '#backgroundListContainer',
+                defaultBackgroundPreview: '#defaultBackgroundPreview'
+            },
+            elementsExists: {
+                adminToken: !!adminToken,
+                backgroundPanel: !!backgroundPanel,
+                backgroundListContainer: !!backgroundListContainer,
+                defaultBackgroundPreview: !!defaultBackgroundPreview
+            },
+            mainContentExists: !!mainContent,
+            retryCount: retryCount
+        });
+        
+        // 如果未达到最大重试次数，延迟重试
+        if (retryCount < maxRetries) {
+            console.debug(`[${timestamp}] 将在 200ms 后重试初始化背景管理器 (${retryCount + 1}/${maxRetries})`);
+            setTimeout(() => {
+                initBackgroundManager({ retryCount: retryCount + 1, maxRetries });
+            }, 200);
+        } else {
+            console.warn(`[${timestamp}] 背景管理页面元素未找到，已重试 ${maxRetries} 次，跳过初始化`);
+        }
+        return;
     }
     
-    // 创建新实例
-    backgroundManager = new BackgroundManager();
+    // 如果已经存在实例，先清理
+    if (backgroundManager) {
+        try {
+            backgroundManager = null;
+        } catch (e) {
+            console.warn('清理旧实例时出错:', e);
+        }
+    }
     
-    // 将实例暴露到全局，方便调试
-    window.backgroundManager = backgroundManager;
+    try {
+        // 创建新实例
+        backgroundManager = new BackgroundManager();
+        
+        // 标记为已初始化
+        if (backgroundPanel) {
+            backgroundPanel._backgroundManagerInitialized = true;
+        }
+        if (mainContent) {
+            mainContent._backgroundManagerInitialized = true;
+        }
+        
+        // 将实例暴露到全局，方便调试
+        window.backgroundManager = backgroundManager;
+        
+        console.debug(`[${timestamp}] 背景管理器初始化成功`, {
+            url: currentUrl,
+            retryCount: retryCount
+        });
+    } catch (error) {
+        console.error(`[${timestamp}] 背景管理器初始化失败:`, error, {
+            url: currentUrl,
+            errorMessage: error.message,
+            errorStack: error.stack
+        });
+    }
 }
 
 // DOMContentLoaded 时初始化（首次页面加载）
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        initBackgroundManager();
+    });
+} else {
+    // 如果 DOM 已经加载完成，立即初始化
     initBackgroundManager();
-});
+}
 
 // 监听页面加载事件（AJAX 导航后触发）
 window.addEventListener('pageLoaded', (event) => {
+    // 重置初始化标志
+    const mainContent = document.querySelector('main.container#mainContent') || document.querySelector('main.container');
+    const backgroundPanel = document.getElementById('background-panel');
+    if (mainContent) {
+        mainContent._backgroundManagerInitialized = false;
+    }
+    if (backgroundPanel) {
+        backgroundPanel._backgroundManagerInitialized = false;
+    }
+    backgroundManagerInitialized = false;
+    
     // 延迟一点时间，确保 DOM 已更新
     setTimeout(() => {
         initBackgroundManager();
-    }, 100);
+    }, 150);
+});
+
+// 监听 content:loaded 事件（统一的事件名称）
+window.addEventListener('content:loaded', (event) => {
+    // 重置初始化标志
+    const mainContent = document.querySelector('main.container#mainContent') || document.querySelector('main.container');
+    const backgroundPanel = document.getElementById('background-panel');
+    if (mainContent) {
+        mainContent._backgroundManagerInitialized = false;
+    }
+    if (backgroundPanel) {
+        backgroundPanel._backgroundManagerInitialized = false;
+    }
+    backgroundManagerInitialized = false;
+    
+    const url = event.detail?.url || window.location.href;
+    console.debug('content:loaded 事件触发，初始化背景管理器', { url });
+    
+    // 延迟一点时间，确保 DOM 已更新
+    setTimeout(() => {
+        initBackgroundManager();
+    }, 150);
 });
 
 // 监听标签页切换事件
-document.addEventListener('DOMContentLoaded', () => {
+function setupBackgroundTabListener() {
     const backgroundTab = document.getElementById('background-tab');
-    if (backgroundTab) {
+    if (backgroundTab && !backgroundTab._tabListenerSetup) {
+        backgroundTab._tabListenerSetup = true;
         backgroundTab.addEventListener('shown.bs.tab', () => {
             // 切换到背景管理标签页时，初始化或刷新
+            console.debug('切换到背景管理标签页');
             setTimeout(() => {
                 if (!backgroundManager) {
                     initBackgroundManager();
@@ -458,5 +606,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 100);
         });
     }
+}
+
+// 在 DOM 加载后设置标签页监听
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupBackgroundTabListener);
+} else {
+    setupBackgroundTabListener();
+}
+
+// 在 content:loaded 后重新设置标签页监听
+window.addEventListener('content:loaded', () => {
+    setTimeout(setupBackgroundTabListener, 200);
+});
+
+window.addEventListener('pageLoaded', () => {
+    setTimeout(setupBackgroundTabListener, 200);
 });
 

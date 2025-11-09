@@ -174,7 +174,13 @@ def register_error_handlers(app):
     @app.errorhandler(413)
     def request_entity_too_large(error):
         if is_api_request():
-            return jsonify({'error': '文件过大', 'message': '上传的文件超过了允许的大小限制'}), 413
+            max_bytes = app.config.get('MAX_CONTENT_LENGTH', 30 * 1024 * 1024)
+            return jsonify({
+                'success': False,
+                'error': '文件过大',
+                'message': f'上传的文件超过了允许的大小限制 (最大 {max_bytes / (1024 * 1024):.2f}MB)',
+                'max_bytes': max_bytes
+            }), 413
         return render_template('errors/413.html'), 413
     
     @app.errorhandler(422)

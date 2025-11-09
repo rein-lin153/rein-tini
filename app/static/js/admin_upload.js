@@ -205,11 +205,25 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('musicPlaylistRefresh', Date.now().toString());
         localStorage.removeItem('musicPlaylistRefresh');
         
-        // 通过 postMessage 通知内嵌播放器刷新
-        window.postMessage({
-            type: 'refreshPlaylist',
-            source: 'adminUpload'
-        }, '*');
+        // 通过 postMessage 通知内嵌播放器刷新（添加错误处理）
+        try {
+            if (window.postMessage) {
+                window.postMessage({
+                    type: 'refreshPlaylist',
+                    source: 'adminUpload',
+                    timestamp: Date.now()
+                }, '*');
+            }
+        } catch (e) {
+            // postMessage 失败时，使用 localStorage 事件作为回退
+            console.debug('postMessage 失败，使用 localStorage 事件回退:', e);
+            try {
+                localStorage.setItem('musicPlaylistRefresh', Date.now().toString());
+                localStorage.removeItem('musicPlaylistRefresh');
+            } catch (fallbackError) {
+                console.warn('回退方案也失败:', fallbackError);
+            }
+        }
         
         // 如果内嵌播放器存在，直接刷新
         if (window.embeddedMusicPlayer) {

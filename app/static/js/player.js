@@ -657,12 +657,27 @@ class MusicPlayer {
     
     // 与主窗口通信
     notifyMainWindow(type, data) {
-        if (window.opener && !window.opener.closed) {
-            window.opener.postMessage({
-                type: type,
-                data: data,
-                source: 'musicPlayer'
-            }, '*');
+        try {
+            if (window.opener && !window.opener.closed && window.opener.postMessage) {
+                window.opener.postMessage({
+                    type: type,
+                    data: data,
+                    source: 'musicPlayer',
+                    timestamp: Date.now()
+                }, '*');
+            } else {
+                // 回退到 localStorage 事件
+                console.debug('window.opener 不可用，使用 localStorage 事件回退');
+                try {
+                    localStorage.setItem('musicPlayerEvent', JSON.stringify({ type, data, timestamp: Date.now() }));
+                    localStorage.removeItem('musicPlayerEvent');
+                } catch (e) {
+                    console.warn('localStorage 回退也失败:', e);
+                }
+            }
+        } catch (e) {
+            console.warn('notifyMainWindow 失败:', e);
+            // 静默失败，不影响主流程
         }
     }
     
