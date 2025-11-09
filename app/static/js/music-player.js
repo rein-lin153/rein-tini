@@ -12,6 +12,11 @@ class MusicPlayer {
         this.duration = 0;
         this.volume = 0.7;
         this.isPlaylistOpen = false;
+        this.saveStateTimer = null;
+        this.isRestoring = false;
+        
+        // 从localStorage恢复状态
+        this.restoreState();
         
         this.init();
     }
@@ -30,6 +35,8 @@ class MusicPlayer {
         this.audio.addEventListener('timeupdate', () => {
             this.currentTime = this.audio.currentTime;
             this.updateProgress();
+            // 每5秒保存一次播放进度
+            this.saveStateDebounced();
         });
         
         this.audio.addEventListener('ended', () => {
@@ -40,12 +47,14 @@ class MusicPlayer {
             this.isPlaying = true;
             this.updatePlayButton();
             this.updateWaves();
+            this.saveState();
         });
         
         this.audio.addEventListener('pause', () => {
             this.isPlaying = false;
             this.updatePlayButton();
             this.updateWaves();
+            this.saveState();
         });
         
         // 绑定控制按钮
@@ -107,11 +116,31 @@ class MusicPlayer {
                 this.playlist = data.music_list;
                 console.log('加载到 ' + this.playlist.length + ' 首歌曲');
                 if (this.playlist.length > 0) {
-                    this.currentTrackIndex = 0;
-                    this.loadTrack(this.currentTrackIndex);
+                    // 尝试恢复之前的状态
+                    const savedState = this.getSavedState();
+                    if (savedState && savedState.currentTrackIndex !== undefined) {
+                        const savedIndex = savedState.currentTrackIndex;
+                        if (savedIndex >= 0 && savedIndex < this.playlist.length) {
+                            this.isRestoring = true;
+                            this.currentTrackIndex = savedIndex;
+                            this.volume = savedState.volume !== undefined ? savedState.volume : this.volume;
+                            this.audio.volume = this.volume;
+                            this.updateVolumeDisplay();
+                            
+                            // 加载歌曲并恢复播放进度
+                            this.loadTrackWithRestore(this.currentTrackIndex, savedState);
+                        } else {
+                            this.currentTrackIndex = 0;
+                            this.loadTrack(this.currentTrackIndex);
+                        }
+                    } else {
+                        this.currentTrackIndex = 0;
+                        this.loadTrack(this.currentTrackIndex);
+                    }
+                    
                     this.renderPlaylist();
                     // 更新UI显示
-                    this.updateTrackInfo(this.playlist[0]);
+                    this.updateTrackInfo(this.playlist[this.currentTrackIndex]);
                 } else {
                     console.warn('播放列表为空，请检查音乐文件是否在 app/static/music/ 目录');
                     this.updateTrackInfo({ title: '暂无音乐', artist: '请将音乐文件放入 app/static/music/ 目录' });
@@ -133,6 +162,53 @@ class MusicPlayer {
         const track = this.playlist[index];
         
         if (this.audio) {
+            this.audio.src = track.url;
+            this.audio.load();
+            
+            // 更新UI
+            this.updateTrackInfo(track);
+            this.updatePlaylistActive();
+            
+            // 如果不是在恢复状态，保存状态
+            if (!this.isRestoring) {
+                this.saveState();
+            }
+        }
+    }
+    
+    // 加载歌曲并恢复播放状态
+    loadTrackWithRestore(index, savedState) {
+        if (index < 0 || index >= this.playlist.length) return;
+        
+        this.currentTrackIndex = index;
+        const track = this.playlist[index];
+        
+        if (this.audio) {
+            // 创建一个一次性的事件监听器来恢复播放进度
+            const restoreHandler = () => {
+                if (savedState && savedState.currentTime) {
+                    const restoreTime = Math.min(savedState.currentTime, this.audio.duration - 1);
+                    this.audio.currentTime = restoreTime;
+                    this.currentTime = restoreTime;
+                    this.updateProgress();
+                }
+                
+                // 如果之前正在播放，尝试继续播放（可能需要用户交互）
+                if (savedState && savedState.isPlaying) {
+                    setTimeout(() => {
+                        this.audio.play().catch(() => {
+                            // 自动播放被阻止，这是正常的
+                            this.isPlaying = false;
+                            this.updatePlayButton();
+                        });
+                    }, 100);
+                }
+                this.isRestoring = false;
+            };
+            
+            // 监听canplay事件，确保音频可以播放
+            this.audio.addEventListener('canplay', restoreHandler, { once: true });
+            
             this.audio.src = track.url;
             this.audio.load();
             
@@ -193,6 +269,7 @@ class MusicPlayer {
         this.volume = percent;
         this.audio.volume = this.volume;
         this.updateVolumeDisplay();
+        this.saveState();
     }
     
     toggleMute() {
@@ -355,12 +432,85 @@ class MusicPlayer {
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
+    
+    // 保存状态到localStorage
+    saveState() {
+        try {
+            const state = {
+                currentTrackIndex: this.currentTrackIndex,
+                currentTime: this.currentTime,
+                isPlaying: this.isPlaying,
+                volume: this.volume,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('musicPlayerState', JSON.stringify(state));
+        } catch (error) {
+            console.error('保存播放器状态失败:', error);
+        }
+    }
+    
+    // 防抖保存状态
+    saveStateDebounced() {
+        if (this.saveStateTimer) {
+            clearTimeout(this.saveStateTimer);
+        }
+        this.saveStateTimer = setTimeout(() => {
+            this.saveState();
+        }, 5000);
+    }
+    
+    // 从localStorage恢复状态
+    restoreState() {
+        try {
+            const savedState = this.getSavedState();
+            if (savedState) {
+                if (savedState.volume !== undefined) {
+                    this.volume = savedState.volume;
+                }
+            }
+        } catch (error) {
+            console.error('恢复播放器状态失败:', error);
+        }
+    }
+    
+    // 获取保存的状态
+    getSavedState() {
+        try {
+            const saved = localStorage.getItem('musicPlayerState');
+            if (saved) {
+                const state = JSON.parse(saved);
+                // 检查状态是否过期（超过1小时则重置）
+                if (Date.now() - state.timestamp > 3600000) {
+                    localStorage.removeItem('musicPlayerState');
+                    return null;
+                }
+                return state;
+            }
+        } catch (error) {
+            console.error('读取保存的状态失败:', error);
+        }
+        return null;
+    }
 }
 
 // 初始化音乐播放器
 document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('musicPlayer')) {
         window.musicPlayer = new MusicPlayer();
+        
+        // 在页面卸载前保存状态
+        window.addEventListener('beforeunload', function() {
+            if (window.musicPlayer) {
+                window.musicPlayer.saveState();
+            }
+        });
+        
+        // 在页面隐藏时保存状态（移动设备）
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden && window.musicPlayer) {
+                window.musicPlayer.saveState();
+            }
+        });
     }
 });
 

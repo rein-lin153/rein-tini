@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initSmoothScroll();
     initImageModals();
     initCountdown();
+    initAjaxNavigation();
 });
 
 /**
@@ -282,12 +283,144 @@ function timeAgo(dateString) {
     return formatDate(date);
 }
 
+/**
+ * 初始化AJAX导航（保持音乐播放器不中断）
+ */
+function initAjaxNavigation() {
+    // 设置初始历史状态
+    if (window.history && window.history.pushState) {
+        window.history.replaceState({ path: window.location.pathname }, '', window.location.pathname);
+    }
+    
+    // 只拦截内部链接，不拦截外部链接、下载链接、邮件链接等
+    document.addEventListener('click', function(e) {
+        const link = e.target.closest('a');
+        if (!link) return;
+        
+        const href = link.getAttribute('href');
+        if (!href) return;
+        
+        // 跳过的情况：
+        // 1. 外部链接
+        // 2. 锚点链接（#开头）
+        // 3. JavaScript链接
+        // 4. 邮件链接
+        // 5. 下载链接
+        // 6. 新窗口打开的链接
+        // 7. 表单提交链接
+        // 8. 管理员功能链接（避免复杂状态管理）
+        if (href.startsWith('http://') || 
+            href.startsWith('https://') || 
+            href.startsWith('//') ||
+            href.startsWith('#') ||
+            href.startsWith('javascript:') ||
+            href.startsWith('mailto:') ||
+            href.startsWith('tel:') ||
+            link.hasAttribute('download') ||
+            link.target === '_blank' ||
+            link.closest('form') ||
+            href.includes('/auth/') ||
+            href.includes('/admin/') ||
+            href.includes('/album/upload') ||
+            href.includes('/album/batch_upload') ||
+            href.includes('/posts/new') ||
+            href.includes('/posts/edit') ||
+            e.ctrlKey || e.metaKey || e.shiftKey) {
+            return;
+        }
+        
+        // 拦截内部导航链接
+        e.preventDefault();
+        
+        // 使用AJAX加载页面内容
+        loadPage(href);
+        
+        // 更新浏览器历史记录
+        if (window.history && window.history.pushState) {
+            window.history.pushState({ path: href }, '', href);
+        }
+    });
+    
+    // 处理浏览器前进/后退
+    window.addEventListener('popstate', function(e) {
+        if (e.state && e.state.path) {
+            loadPage(e.state.path);
+        } else {
+            window.location.reload();
+        }
+    });
+}
+
+/**
+ * 使用AJAX加载页面内容
+ */
+function loadPage(url) {
+    // 显示加载指示器
+    const mainContent = document.querySelector('main.container');
+    if (mainContent) {
+        mainContent.style.opacity = '0.5';
+        mainContent.style.transition = 'opacity 0.3s';
+    }
+    
+    // 获取页面内容
+    fetch(url, {
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.text())
+    .then(html => {
+        // 解析HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
+        
+        // 更新页面标题
+        if (doc.title) {
+            document.title = doc.title;
+        }
+        
+        // 更新主内容区域
+        const newMainContent = doc.querySelector('main.container');
+        const currentMainContent = document.querySelector('main.container');
+        if (newMainContent && currentMainContent) {
+            currentMainContent.innerHTML = newMainContent.innerHTML;
+            currentMainContent.style.opacity = '1';
+        }
+        
+        // 更新Flash消息
+        const newFlashMessages = doc.querySelector('.container.mt-3');
+        const currentFlashMessages = document.querySelector('.container.mt-3');
+        if (newFlashMessages && currentFlashMessages) {
+            currentFlashMessages.innerHTML = newFlashMessages.innerHTML;
+        }
+        
+        // 重新初始化页面功能
+        initTooltips();
+        initAlerts();
+        initSmoothScroll();
+        initImageModals();
+        initCountdown();
+        
+        // 触发自定义事件，让其他脚本知道页面已更新
+        window.dispatchEvent(new CustomEvent('pageLoaded', { detail: { url } }));
+        
+        // 滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    })
+    .catch(error => {
+        console.error('加载页面失败:', error);
+        // 如果AJAX加载失败，回退到传统页面跳转
+        window.location.href = url;
+    });
+}
+
 // 导出到全局
 window.HeartMoments = {
     formatDate,
     timeAgo,
     animateNumber,
-    createImageModal
+    createImageModal,
+    loadPage
 };
 
 console.log('💖 心语时光已加载完成');
