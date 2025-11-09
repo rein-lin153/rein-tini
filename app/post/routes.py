@@ -49,25 +49,6 @@ def list_posts():
     return render_template('post/list.html', posts=posts)
 
 
-@bp.route('/<int:post_id>')
-def detail(post_id):
-    """日记详情"""
-    post = Post.query.get_or_404(post_id)
-    
-    # 检查是否为私密日记
-    if post.is_private and not current_user.is_authenticated:
-        abort(403)
-    
-    # 渲染 Markdown
-    post.body_html = safe_markdown(post.body)
-    
-    # 获取评论
-    comments = Comment.query.filter_by(post_id=post_id, parent_id=None) \
-        .order_by(Comment.created_at.asc()).all()
-    
-    return render_template('post/detail.html', post=post, comments=comments)
-
-
 @bp.route('/new', methods=['GET', 'POST'])
 @login_required
 def new_post():
@@ -90,6 +71,38 @@ def new_post():
         return redirect(url_for('post.detail', post_id=post.id))
     
     return render_template('post/edit.html', form=form, is_new=True)
+
+
+@bp.route('/<int:post_id>/comment', methods=['POST'])
+@login_required
+def add_comment(post_id):
+    """添加日记评论"""
+    post = Post.query.get_or_404(post_id)
+    
+    # 检查是否为私密日记（非作者无法评论）
+    if post.is_private and post.author_id != current_user.id and not current_user.is_admin:
+        flash('您没有权限评论这篇私密日记', 'danger')
+        return redirect(url_for('post.list_posts'))
+    
+    body = request.form.get('body', '').strip()
+    parent_id = request.form.get('parent_id', type=int)
+    
+    if not body:
+        flash('评论内容不能为空', 'warning')
+        return redirect(url_for('post.detail', post_id=post_id))
+    
+    comment = Comment(
+        body=body,
+        author_id=current_user.id,
+        post_id=post_id,
+        parent_id=parent_id
+    )
+    
+    db.session.add(comment)
+    db.session.commit()
+    
+    flash('评论已添加', 'success')
+    return redirect(url_for('post.detail', post_id=post_id))
 
 
 @bp.route('/<int:post_id>/edit', methods=['GET', 'POST'])
@@ -135,29 +148,21 @@ def delete_post(post_id):
     return redirect(url_for('post.list_posts'))
 
 
-@bp.route('/<int:post_id>/comment', methods=['POST'])
-@login_required
-def add_comment(post_id):
-    """添加日记评论"""
+@bp.route('/<int:post_id>')
+def detail(post_id):
+    """日记详情"""
     post = Post.query.get_or_404(post_id)
     
-    body = request.form.get('body', '').strip()
-    parent_id = request.form.get('parent_id', type=int)
+    # 检查是否为私密日记
+    if post.is_private and not current_user.is_authenticated:
+        abort(403)
     
-    if not body:
-        flash('评论内容不能为空', 'warning')
-        return redirect(url_for('post.detail', post_id=post_id))
+    # 渲染 Markdown
+    post.body_html = safe_markdown(post.body)
     
-    comment = Comment(
-        body=body,
-        author_id=current_user.id,
-        post_id=post_id,
-        parent_id=parent_id
-    )
+    # 获取评论
+    comments = Comment.query.filter_by(post_id=post_id, parent_id=None) \
+        .order_by(Comment.created_at.asc()).all()
     
-    db.session.add(comment)
-    db.session.commit()
-    
-    flash('评论已添加', 'success')
-    return redirect(url_for('post.detail', post_id=post_id))
+    return render_template('post/detail.html', post=post, comments=comments)
 

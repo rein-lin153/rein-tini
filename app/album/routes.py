@@ -106,16 +106,31 @@ def batch_upload():
     return render_template('album/batch_upload.html', form=form)
 
 
-@bp.route('/<int:photo_id>')
-def photo_detail(photo_id):
-    """照片详情页"""
+@bp.route('/<int:photo_id>/comment', methods=['POST'])
+@login_required
+def add_comment(photo_id):
+    """添加照片评论"""
     photo = Photo.query.get_or_404(photo_id)
     
-    # 获取评论
-    comments = Comment.query.filter_by(photo_id=photo_id, parent_id=None) \
-        .order_by(Comment.created_at.desc()).all()
+    body = request.form.get('body', '').strip()
+    parent_id = request.form.get('parent_id', type=int)
     
-    return render_template('album/photo_detail.html', photo=photo, comments=comments)
+    if not body:
+        flash('评论内容不能为空', 'warning')
+        return redirect(url_for('album.photo_detail', photo_id=photo_id))
+    
+    comment = Comment(
+        body=body,
+        author_id=current_user.id,
+        photo_id=photo_id,
+        parent_id=parent_id
+    )
+    
+    db.session.add(comment)
+    db.session.commit()
+    
+    flash('评论已添加', 'success')
+    return redirect(url_for('album.photo_detail', photo_id=photo_id))
 
 
 @bp.route('/<int:photo_id>/edit', methods=['GET', 'POST'])
@@ -167,29 +182,14 @@ def delete_photo(photo_id):
     return redirect(url_for('album.gallery'))
 
 
-@bp.route('/<int:photo_id>/comment', methods=['POST'])
-@login_required
-def add_comment(photo_id):
-    """添加照片评论"""
+@bp.route('/<int:photo_id>')
+def photo_detail(photo_id):
+    """照片详情页"""
     photo = Photo.query.get_or_404(photo_id)
     
-    body = request.form.get('body', '').strip()
-    parent_id = request.form.get('parent_id', type=int)
+    # 获取评论
+    comments = Comment.query.filter_by(photo_id=photo_id, parent_id=None) \
+        .order_by(Comment.created_at.desc()).all()
     
-    if not body:
-        flash('评论内容不能为空', 'warning')
-        return redirect(url_for('album.photo_detail', photo_id=photo_id))
-    
-    comment = Comment(
-        body=body,
-        author_id=current_user.id,
-        photo_id=photo_id,
-        parent_id=parent_id
-    )
-    
-    db.session.add(comment)
-    db.session.commit()
-    
-    flash('评论已添加', 'success')
-    return redirect(url_for('album.photo_detail', photo_id=photo_id))
+    return render_template('album/photo_detail.html', photo=photo, comments=comments)
 
