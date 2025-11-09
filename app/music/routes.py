@@ -198,65 +198,9 @@ def upload_music():
         return jsonify({'error': f'上传失败: {str(e)}'}), 500
 
 
-@bp.route('/<int:song_id>', methods=['DELETE'])
-def delete_music(song_id):
-    """
-    删除音乐（管理员）
-    
-    DELETE /music/<id>
-    Headers: Authorization: Bearer <ADMIN_UPLOAD_TOKEN>
-    """
-    try:
-        # 验证权限
-        auth_header = request.headers.get('Authorization', '')
-        token = None
-        
-        if auth_header.startswith('Bearer '):
-            token = auth_header[7:]
-        
-        if token:
-            admin_token = current_app.config.get('ADMIN_UPLOAD_TOKEN')
-            if not validate_upload_token(token, admin_token):
-                return jsonify({'error': '无效的上传令牌'}), 403
-        elif not (current_user.is_authenticated and current_user.is_admin):
-            return jsonify({'error': '无权访问'}), 403
-        
-        music_index = get_music_index()
-        song = music_index.get_song_by_id(song_id)
-        
-        if not song:
-            return jsonify({'error': '歌曲不存在'}), 404
-        
-        # 删除文件
-        music_folder = current_app.config['MUSIC_FOLDER']
-        file_path = os.path.join(music_folder, song['filename'])
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except Exception as e:
-                current_app.logger.warning(f'删除音乐文件失败: {str(e)}')
-        
-        # 删除封面
-        if song.get('cover'):
-            cover_filename = os.path.basename(song['cover'])
-            cover_folder = current_app.config['COVER_FOLDER']
-            cover_path = os.path.join(cover_folder, cover_filename)
-            if os.path.exists(cover_path):
-                try:
-                    os.remove(cover_path)
-                except Exception as e:
-                    current_app.logger.warning(f'删除封面文件失败: {str(e)}')
-        
-        # 从索引删除
-        music_index.delete_song(song_id)
-        
-        current_app.logger.info(f'音乐已删除: {song["filename"]} (ID: {song_id})')
-        
-        return jsonify({'message': '删除成功'}), 200
-    
-    except Exception as e:
-        current_app.logger.error(f'删除音乐失败: {str(e)}', exc_info=True)
-        return jsonify({'error': f'删除失败: {str(e)}'}), 500
+# 注意：删除音乐功能已移至 routes_api.py
+# 请使用新的 API: DELETE /music/api/music/<music_id>
+# 旧的 DELETE /music/<song_id> 路由已移除，以避免端点冲突
 
 
 @bp.route('/backgrounds')
