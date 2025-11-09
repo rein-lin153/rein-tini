@@ -1,0 +1,337 @@
+/* 音乐播放器样式 */
+.music-player-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    padding: 12px 0;
+    transition: all 0.3s ease;
+}
+
+.music-player-container.collapsed {
+    transform: translateY(-100%);
+    opacity: 0;
+}
+
+.music-player {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: white;
+}
+
+.music-player-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+.music-player-btn {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.music-player-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+}
+
+.music-player-btn.play-pause {
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.25);
+    font-size: 18px;
+}
+
+.music-player-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.music-player-title {
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.music-player-artist {
+    font-size: 12px;
+    opacity: 0.9;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.music-player-progress-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.music-player-progress {
+    flex: 1;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.music-player-progress-bar {
+    height: 100%;
+    background: white;
+    border-radius: 2px;
+    transition: width 0.1s linear;
+    position: relative;
+}
+
+.music-player-progress-bar::after {
+    content: '';
+    position: absolute;
+    right: -6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 12px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.music-player-progress:hover .music-player-progress-bar::after {
+    opacity: 1;
+}
+
+.music-player-time {
+    font-size: 12px;
+    white-space: nowrap;
+    min-width: 80px;
+    text-align: right;
+    opacity: 0.9;
+}
+
+.music-player-volume {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.music-player-volume-slider {
+    width: 80px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+}
+
+.music-player-volume-bar {
+    height: 100%;
+    background: white;
+    border-radius: 2px;
+    width: 70%;
+    transition: width 0.1s linear;
+}
+
+.music-player-playlist-btn {
+    flex-shrink: 0;
+}
+
+.music-player-playlist {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    max-height: 300px;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    display: none;
+    z-index: 1051;
+}
+
+.music-player-playlist.show {
+    display: block;
+}
+
+.music-player-playlist-item {
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+    border-bottom: 1px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.music-player-playlist-item:hover {
+    background: #f8f9fa;
+}
+
+.music-player-playlist-item.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.music-player-playlist-item-icon {
+    width: 20px;
+    text-align: center;
+    opacity: 0.7;
+}
+
+.music-player-playlist-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.music-player-playlist-item-title {
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+.music-player-playlist-item-artist {
+    font-size: 12px;
+    opacity: 0.7;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin: 0;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .music-player {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .music-player-info {
+        order: 3;
+        width: 100%;
+    }
+    
+    .music-player-progress-container {
+        order: 4;
+        width: 100%;
+    }
+    
+    .music-player-volume {
+        display: none;
+    }
+    
+    .music-player-time {
+        min-width: 60px;
+        font-size: 11px;
+    }
+}
+
+/* 旋转动画（播放时） */
+@keyframes rotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.music-player-btn.play-pause.playing i {
+    animation: rotate 2s linear infinite;
+}
+
+/* 波浪动画效果 */
+.music-player-waves {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 20px;
+    margin-left: 10px;
+}
+
+.music-player-wave {
+    width: 3px;
+    background: white;
+    border-radius: 2px;
+    animation: wave 1s ease-in-out infinite;
+    opacity: 0.7;
+}
+
+.music-player-wave:nth-child(1) {
+    height: 8px;
+    animation-delay: 0s;
+}
+
+.music-player-wave:nth-child(2) {
+    height: 12px;
+    animation-delay: 0.1s;
+}
+
+.music-player-wave:nth-child(3) {
+    height: 16px;
+    animation-delay: 0.2s;
+}
+
+.music-player-wave:nth-child(4) {
+    height: 12px;
+    animation-delay: 0.3s;
+}
+
+.music-player-wave:nth-child(5) {
+    height: 8px;
+    animation-delay: 0.4s;
+}
+
+@keyframes wave {
+    0%, 100% {
+        transform: scaleY(0.5);
+        opacity: 0.5;
+    }
+    50% {
+        transform: scaleY(1);
+        opacity: 1;
+    }
+}
+
+.music-player-waves.playing .music-player-wave {
+    animation-play-state: running;
+}
+
+.music-player-waves:not(.playing) .music-player-wave {
+    animation-play-state: paused;
+}
+

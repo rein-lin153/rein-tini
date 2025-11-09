@@ -204,3 +204,54 @@ def upload_photo():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+
+@bp.route('/music/list')
+def get_music_list():
+    """获取音乐列表"""
+    import os
+    from pathlib import Path
+    
+    music_folder = current_app.config.get('MUSIC_FOLDER')
+    if not music_folder or not os.path.exists(music_folder):
+        return jsonify({
+            'success': True,
+            'music_list': []
+        })
+    
+    allowed_extensions = current_app.config.get('ALLOWED_MUSIC_EXTENSIONS', {'mp3', 'wav', 'ogg', 'm4a', 'flac'})
+    music_list = []
+    
+    try:
+        for file in os.listdir(music_folder):
+            if os.path.isfile(os.path.join(music_folder, file)):
+                ext = file.rsplit('.', 1)[-1].lower() if '.' in file else ''
+                if ext in allowed_extensions:
+                    # 从文件名提取标题（去掉扩展名）
+                    title = file.rsplit('.', 1)[0]
+                    # 可以尝试从文件名解析艺术家和标题（例如：艺术家 - 标题.mp3）
+                    if ' - ' in title:
+                        parts = title.split(' - ', 1)
+                        artist = parts[0].strip()
+                        song_title = parts[1].strip()
+                    else:
+                        artist = '未知艺术家'
+                        song_title = title
+                    
+                    music_list.append({
+                        'filename': file,
+                        'title': song_title,
+                        'artist': artist,
+                        'url': '/static/music/{}'.format(file)
+                    })
+        
+        # 按文件名排序
+        music_list.sort(key=lambda x: x['title'])
+        
+    except Exception as e:
+        current_app.logger.error('获取音乐列表失败: {}'.format(str(e)))
+    
+    return jsonify({
+        'success': True,
+        'music_list': music_list
+    })
+
