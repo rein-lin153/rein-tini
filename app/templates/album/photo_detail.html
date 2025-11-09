@@ -55,6 +55,7 @@
             <div class="card-body">
                 {% if current_user.is_authenticated %}
                 <form method="POST" action="{{ url_for('album.add_comment', photo_id=photo.id) }}" class="mb-4">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <div class="mb-2">
                         <textarea name="body" class="form-control" rows="3" placeholder="写下你的评论..." required></textarea>
                     </div>
