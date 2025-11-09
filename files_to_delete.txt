@@ -1,0 +1,22 @@
+需要删除或替换的旧播放器相关文件
+==========================================
+
+以下文件包含旧播放器实现，可以被安全删除或替换：
+
+1. 模板文件：
+   - app/templates/main/music-player.html (已替换为新播放器模板)
+   - app/templates/main/music_upload.html (已替换为 app/templates/admin/music_upload.html)
+
+2. 静态文件（可选删除，新文件已创建）：
+   - app/static/js/music-player.js (已替换为 app/static/js/player.js)
+   - app/static/css/music-player.css (已替换为 app/static/css/player.css)
+
+3. 路由代码（已从以下文件中删除）：
+   - app/main/routes.py (已删除 /music-player 和 /music/upload-page 路由)
+   - app/api/routes.py (已删除 /api/music/list 和 /api/music/upload 路由)
+
+注意：
+- 旧的静态文件可以保留作为备份，但新系统不会使用它们
+- 如果确认新系统工作正常，可以删除旧文件以清理代码库
+- 建议先测试新系统，确认一切正常后再删除旧文件
+

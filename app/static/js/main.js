@@ -203,6 +203,81 @@ if (backToTopBtn) {
 }
 
 /**
+ * 打开音乐播放器窗口
+ */
+const openPlayerBtn = document.getElementById('openPlayerBtn');
+let musicPlayerWindow = null;
+
+if (openPlayerBtn) {
+    openPlayerBtn.addEventListener('click', function() {
+        // 检查播放器窗口是否已经打开
+        if (musicPlayerWindow && !musicPlayerWindow.closed) {
+            // 如果已打开，聚焦到该窗口
+            musicPlayerWindow.focus();
+        } else {
+            // 打开新的播放器窗口
+            const width = 420;
+            const height = 600;
+            const left = (screen.width - width) / 2;
+            const top = (screen.height - height) / 2;
+            
+            musicPlayerWindow = window.open(
+                '/music/player',
+                'lovemusic',
+                `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no,status=no`
+            );
+            
+            // 保存窗口引用到全局
+            window.musicPlayerWindow = musicPlayerWindow;
+            
+            // 监听播放器窗口的消息
+            window.addEventListener('message', function(e) {
+                if (e.data && e.data.source === 'musicPlayer') {
+                    handlePlayerMessage(e.data);
+                }
+            });
+        }
+    });
+}
+
+/**
+ * 处理来自播放器窗口的消息
+ */
+function handlePlayerMessage(message) {
+    switch (message.type) {
+        case 'stateChanged':
+            // 可以在这里更新主窗口的迷你控制器（如果实现）
+            console.log('播放器状态更新:', message.data);
+            break;
+        case 'trackChanged':
+            console.log('当前播放:', message.data);
+            break;
+    }
+}
+
+// 监听播放列表刷新事件
+window.addEventListener('storage', function(e) {
+    if (e.key === 'musicPlaylistRefresh' && musicPlayerWindow && !musicPlayerWindow.closed) {
+        musicPlayerWindow.postMessage({
+            type: 'refreshPlaylist',
+            source: 'mainWindow'
+        }, '*');
+    }
+});
+
+// 监听来自上传页面的消息
+window.addEventListener('message', function(e) {
+    if (e.data && e.data.type === 'refreshPlaylist' && e.data.source === 'adminUpload') {
+        if (musicPlayerWindow && !musicPlayerWindow.closed) {
+            musicPlayerWindow.postMessage({
+                type: 'refreshPlaylist',
+                source: 'mainWindow'
+            }, '*');
+        }
+    }
+});
+
+/**
  * 确认删除
  */
 document.querySelectorAll('[data-confirm]').forEach(function(element) {

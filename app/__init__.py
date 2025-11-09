@@ -62,22 +62,37 @@ def create_app(config_name=None):
 
 def ensure_directories(app):
     """确保必要的目录存在"""
+    # 确保配置中包含所有必需的目录
+    base_dir = app.config.get('BASE_DIR')
+    if not base_dir:
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        app.config['BASE_DIR'] = base_dir
+    
+    # 设置默认值（如果未在配置中定义）
+    if 'MUSIC_FOLDER' not in app.config:
+        app.config['MUSIC_FOLDER'] = os.path.join(base_dir, 'app', 'static', 'music')
+    if 'COVER_FOLDER' not in app.config:
+        app.config['COVER_FOLDER'] = os.path.join(base_dir, 'app', 'static', 'music', 'covers')
+    if 'BACKGROUND_FOLDER' not in app.config:
+        app.config['BACKGROUND_FOLDER'] = os.path.join(base_dir, 'app', 'static', 'backgrounds')
+    
     directories = [
-        app.config['UPLOAD_FOLDER'],
-        app.config['PHOTOS_FOLDER'],
-        app.config['THUMBS_FOLDER'],
-        app.config['BACKGROUNDS_FOLDER'],
-        app.config.get('MUSIC_FOLDER', os.path.join(app.config['BASE_DIR'], 'app', 'static', 'music')),
-        app.config.get('COVER_FOLDER', os.path.join(app.config['BASE_DIR'], 'app', 'static', 'music', 'covers')),
-        app.config['BACKUP_DIR'],
-        os.path.dirname(app.config['LOG_FILE']),
-        os.path.join(app.config['BASE_DIR'], 'instance')
+        app.config.get('UPLOAD_FOLDER'),
+        app.config.get('PHOTOS_FOLDER'),
+        app.config.get('THUMBS_FOLDER'),
+        app.config.get('BACKGROUNDS_FOLDER'),
+        app.config.get('MUSIC_FOLDER'),
+        app.config.get('COVER_FOLDER'),
+        app.config.get('BACKGROUND_FOLDER'),
+        app.config.get('BACKUP_DIR'),
+        os.path.dirname(app.config.get('LOG_FILE', '')),
+        os.path.join(base_dir, 'instance')
     ]
     
     for directory in directories:
-        if not os.path.exists(directory):
+        if directory and not os.path.exists(directory):
             try:
-                os.makedirs(directory, mode=0o755)
+                os.makedirs(directory, mode=0o755, exist_ok=True)
                 app.logger.info('创建目录: {}'.format(directory))
             except OSError as e:
                 app.logger.error('创建目录失败 {}: {}'.format(directory, str(e)))
@@ -113,6 +128,10 @@ def register_blueprints(app):
     
     from app.admin import bp as admin_bp
     app.register_blueprint(admin_bp)
+    
+    # 注册音乐模块
+    from app.music import bp as music_bp
+    app.register_blueprint(music_bp)
     
     if app.config['ENABLE_API']:
         from app.api import bp as api_bp

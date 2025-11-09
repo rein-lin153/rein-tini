@@ -45,13 +45,17 @@ class Config:
     # ========== 音乐文件配置 ==========
     MUSIC_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'music')
     COVER_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'music', 'covers')
-    ALLOWED_MUSIC_EXTENSIONS = {'mp3', 'wav', 'ogg', 'm4a', 'flac'}
+    BACKGROUND_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'backgrounds')
+    ALLOWED_MUSIC_EXTENSIONS = {'mp3'}  # 仅支持 MP3
     ALLOWED_COVER_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
-    MAX_MUSIC_SIZE = int(os.environ.get('MAX_MUSIC_SIZE', 50 * 1024 * 1024))  # 50MB
-    MAX_COVER_SIZE = int(os.environ.get('MAX_COVER_SIZE', 5 * 1024 * 1024))  # 5MB
+    MAX_MUSIC_SIZE = int(os.environ.get('MAX_MUSIC_SIZE', 25 * 1024 * 1024))  # 25MB
+    MAX_COVER_SIZE = int(os.environ.get('MAX_COVER_SIZE', 2 * 1024 * 1024))  # 2MB
     
-    # 文件大小限制（5MB，用于图片上传）
-    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 5 * 1024 * 1024))
+    # 管理员上传令牌
+    ADMIN_UPLOAD_TOKEN = os.environ.get('ADMIN_UPLOAD_TOKEN', 'changeme123')
+    
+    # 文件大小限制（25MB，用于音乐上传）
+    MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 25 * 1024 * 1024))
     
     # 允许的文件扩展名
     ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp', 'gif'}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}上传音乐 - {{ SITE_TITLE }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/admin_upload.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="mb-4">
+                <i class="fas fa-music text-primary"></i> 上传音乐
+            </h2>
+            
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <form id="musicUploadForm" enctype="multipart/form-data">
+                        <!-- 音乐文件上传区域 -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">音乐文件 <span class="text-danger">*</span></label>
+                            <div class="upload-area" id="musicUploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                <p class="mb-2">点击选择或拖拽音乐文件到这里</p>
+                                <p class="text-muted small">支持格式: MP3 (最大 25MB)</p>
+                                <div class="file-input-wrapper mt-3">
+                                    <button type="button" class="btn btn-primary">
+                                        <i class="fas fa-file-audio"></i> 选择文件
+                                    </button>
+                                    <input type="file" 
+                                           id="musicFile" 
+                                           name="file" 
+                                           class="file-input" 
+                                           accept=".mp3"
+                                           required>
+                                </div>
+                                <div id="musicFileName" class="mt-3 text-muted"></div>
+                                <div class="progress-bar-container" id="musicProgressContainer">
+                                    <div class="progress-bar" id="musicProgressBar"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 封面图片上传区域 -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">封面图片 <span class="text-muted">(可选)</span></label>
+                            <div class="upload-area" id="coverUploadArea">
+                                <i class="fas fa-image fa-3x text-primary mb-3"></i>
+                                <p class="mb-2">点击选择或拖拽封面图片到这里</p>
+                                <p class="text-muted small">支持格式: JPG, PNG, WEBP (最大 2MB)</p>
+                                <div class="file-input-wrapper mt-3">
+                                    <button type="button" class="btn btn-outline-primary">
+                                        <i class="fas fa-image"></i> 选择封面
+                                    </button>
+                                    <input type="file" 
+                                           id="coverFile" 
+                                           name="cover" 
+                                           class="file-input" 
+                                           accept=".jpg,.jpeg,.png,.webp">
+                                </div>
+                                <div id="coverPreview" class="mt-3"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- 歌曲信息（可选） -->
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">歌曲标题 <span class="text-muted">(可选)</span></label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="songTitle" 
+                                       name="title" 
+                                       placeholder="如果不填，将从文件名提取">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">艺术家 <span class="text-muted">(可选)</span></label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="songArtist" 
+                                       name="artist" 
+                                       placeholder="如果不填，将从文件名提取">
+                            </div>
+                        </div>
+                        
+                        <!-- 提交按钮 -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg" id="uploadBtn">
+                                <i class="fas fa-upload"></i> 上传音乐
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- 上传结果提示 -->
+            <div id="uploadResult" class="alert mt-4" style="display: none;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 隐藏的 token 字段 -->
+<input type="hidden" id="adminToken" value="{{ admin_token }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/admin_upload.js') }}"></script>
+{% endblock %}
+
