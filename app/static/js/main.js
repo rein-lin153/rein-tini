@@ -404,6 +404,18 @@ function loadPage(url) {
         initImageModals();
         initCountdown();
         
+        // 检查是否需要加载额外的脚本
+        const extraScripts = doc.querySelectorAll('script[src]');
+        extraScripts.forEach(script => {
+            const src = script.getAttribute('src');
+            // 如果脚本还未加载，动态加载
+            if (src && !document.querySelector(`script[src="${src}"]`)) {
+                const newScript = document.createElement('script');
+                newScript.src = src;
+                document.body.appendChild(newScript);
+            }
+        });
+        
         // 触发自定义事件，让其他脚本知道页面已更新
         window.dispatchEvent(new CustomEvent('pageLoaded', { detail: { url } }));
         

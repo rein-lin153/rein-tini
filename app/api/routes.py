@@ -8,7 +8,7 @@ import os
 from flask import jsonify, request, current_app
 from flask_login import login_required, current_user
 from app.api import bp
-from app.models import Post, Photo, Comment, Anniversary, User
+from app.models import Post, Photo, Comment, Anniversary, User, Background
 from app.main.utils import get_days_together, get_next_anniversary
 from app.extensions import db
 
@@ -204,6 +204,266 @@ def upload_photo():
     
     except Exception as e:
         return jsonify({'error': str(e)}), 400
+
+
+# ========== 背景管理 API ==========
+
+def check_admin_auth():
+    """检查管理员权限（token 或 session）"""
+    auth_header = request.headers.get('Authorization', '')
+    token = None
+    
+    if auth_header.startswith('Bearer '):
+        token = auth_header[7:]
+    
+    if token:
+        admin_token = current_app.config.get('ADMIN_UPLOAD_TOKEN')
+        if token == admin_token:
+            return True, None
+        return False, '无效的上传令牌'
+    
+    # 尝试从 session 验证
+    try:
+        if current_user.is_authenticated and current_user.is_admin:
+            return True, None
+    except:
+        pass
+    
+    return False, '无权访问，需要管理员权限或有效的上传令牌'
+
+
+@bp.route('/backgrounds', methods=['GET'])
+def list_backgrounds():
+    """
+    获取背景列表
+    
+    GET /api/backgrounds
+    Response: {
+        "backgrounds": [
+            {
+                "id": 1,
+                "filename": "bg1.jpg",
+                "url": "/uploads/backgrounds/bg1.jpg",
+                "is_default": true,
+                ...
+            }
+        ]
+    }
+    """
+    try:
+        backgrounds = Background.query.order_by(Background.is_default.desc(), Background.uploaded_at.desc()).all()
+        return jsonify({
+            'backgrounds': [bg.to_dict() for bg in backgrounds]
+        })
+    except Exception as e:
+        current_app.logger.error(f'获取背景列表失败: {str(e)}', exc_info=True)
+        return jsonify({'error': str(e)}), 500
+
+
+@bp.route('/backgrounds', methods=['POST'])
+@login_required
+def upload_background():
+    """
+    上传背景图片（管理员）
+    
+    POST /api/backgrounds
+    Headers: Authorization: Bearer <ADMIN_UPLOAD_TOKEN>
+    Form Data:
+        - file: 背景图片文件（JPG/PNG，必需）
+    
+    Response: {
+        "id": 1,
+        "filename": "bg1.jpg",
+        "url": "/uploads/backgrounds/bg1.jpg",
+        ...
+    }
+    """
+    try:
+        # 检查管理员权限
+        is_admin, error_msg = check_admin_auth()
+        if not is_admin:
+            return jsonify({'error': error_msg}), 403
+        
+        if 'file' not in request.files:
+            return jsonify({'error': '未选择文件'}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'error': '未选择文件'}), 400
+        
+        # 检查文件类型
+        allowed_extensions = {'jpg', 'jpeg', 'png'}
+        file_ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else ''
+        if file_ext not in allowed_extensions:
+            return jsonify({'error': '不支持的文件格式，仅支持 JPG/PNG'}), 400
+        
+        # 检查文件大小（最大 5MB）
+        max_size = 5 * 1024 * 1024  # 5MB
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        
+        if file_size > max_size:
+            return jsonify({'error': '文件过大，最大 5MB'}), 400
+        
+        # 保存文件
+        from PIL import Image
+        import uuid
+        from werkzeug.utils import secure_filename
+        
+        backgrounds_folder = current_app.config['BACKGROUNDS_FOLDER']
+        os.makedirs(backgrounds_folder, exist_ok=True)
+        
+        # 生成唯一文件名
+        filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:8]}.{file_ext}"
+        filename = secure_filename(filename)
+        file_path = os.path.join(backgrounds_folder, filename)
+        
+        # 打开并处理图片
+        img = Image.open(file)
+        
+        # 获取图片尺寸
+        width, height = img.size
+        
+        # 如果是 PNG，转换为 RGB（JPG 不支持透明度）
+        if img.mode in ('RGBA', 'LA', 'P'):
+            background = Image.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'P':
+                img = img.convert('RGBA')
+            background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+            img = background
+        
+        # 保存图片
+        img.save(file_path, 'JPEG', quality=85, optimize=True)
+        
+        # 创建数据库记录
+        background = Background(
+            filename=filename,
+            url=f'/uploads/backgrounds/{filename}',
+            file_size=file_size,
+            width=width,
+            height=height,
+            is_default=False
+        )
+        
+        db.session.add(background)
+        db.session.commit()
+        
+        current_app.logger.info(f'背景上传成功: {filename} (ID: {background.id})')
+        
+        return jsonify(background.to_dict()), 201
+    
+    except Exception as e:
+        current_app.logger.error(f'上传背景失败: {str(e)}', exc_info=True)
+        return jsonify({'error': f'上传失败: {str(e)}'}), 500
+
+
+@bp.route('/backgrounds/<int:bg_id>', methods=['DELETE'])
+@login_required
+def delete_background(bg_id):
+    """
+    删除背景（管理员）
+    
+    DELETE /api/backgrounds/<id>
+    Headers: Authorization: Bearer <ADMIN_UPLOAD_TOKEN>
+    
+    Response: {
+        "success": true
+    }
+    """
+    try:
+        # 检查管理员权限
+        is_admin, error_msg = check_admin_auth()
+        if not is_admin:
+            return jsonify({'error': error_msg}), 403
+        
+        background = Background.query.get_or_404(bg_id)
+        
+        # 不能删除默认背景
+        if background.is_default:
+            return jsonify({'error': '不能删除默认背景，请先设置其他背景为默认'}), 400
+        
+        # 删除文件
+        backgrounds_folder = current_app.config['BACKGROUNDS_FOLDER']
+        file_path = os.path.join(backgrounds_folder, background.filename)
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                current_app.logger.warning(f'删除背景文件失败: {str(e)}')
+        
+        # 从数据库删除
+        db.session.delete(background)
+        db.session.commit()
+        
+        current_app.logger.info(f'背景已删除: {background.filename} (ID: {bg_id})')
+        
+        return jsonify({'success': True})
+    
+    except Exception as e:
+        current_app.logger.error(f'删除背景失败: {str(e)}', exc_info=True)
+        return jsonify({'error': f'删除失败: {str(e)}'}), 500
+
+
+@bp.route('/backgrounds/<int:bg_id>/default', methods=['PUT'])
+@login_required
+def set_default_background(bg_id):
+    """
+    设置默认背景（管理员）
+    
+    PUT /api/backgrounds/<id>/default
+    Headers: Authorization: Bearer <ADMIN_UPLOAD_TOKEN>
+    
+    Response: {
+        "id": 1,
+        "is_default": true,
+        ...
+    }
+    """
+    try:
+        # 检查管理员权限
+        is_admin, error_msg = check_admin_auth()
+        if not is_admin:
+            return jsonify({'error': error_msg}), 403
+        
+        background = Background.query.get_or_404(bg_id)
+        
+        # 取消其他背景的默认状态
+        Background.query.filter_by(is_default=True).update({'is_default': False})
+        
+        # 设置当前背景为默认
+        background.is_default = True
+        db.session.commit()
+        
+        current_app.logger.info(f'设置默认背景: {background.filename} (ID: {bg_id})')
+        
+        return jsonify(background.to_dict())
+    
+    except Exception as e:
+        current_app.logger.error(f'设置默认背景失败: {str(e)}', exc_info=True)
+        return jsonify({'error': f'设置失败: {str(e)}'}), 500
+
+
+@bp.route('/backgrounds/default', methods=['GET'])
+def get_default_background():
+    """
+    获取默认背景
+    
+    GET /api/backgrounds/default
+    Response: {
+        "id": 1,
+        "url": "/uploads/backgrounds/bg1.jpg",
+        ...
+    }
+    """
+    try:
+        background = Background.query.filter_by(is_default=True).first()
+        if not background:
+            return jsonify({'url': None, 'message': '未设置默认背景'})
+        return jsonify(background.to_dict())
+    except Exception as e:
+        current_app.logger.error(f'获取默认背景失败: {str(e)}', exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 
 

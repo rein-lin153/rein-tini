@@ -214,6 +214,39 @@ class Music(db.Model):
         return '<Music {} - {}>'.format(self.artist, self.title)
 
 
+class Background(db.Model):
+    """背景图片模型"""
+    
+    __tablename__ = 'backgrounds'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    filename = db.Column(db.String(256), nullable=False, unique=True, index=True)  # 文件名
+    url = db.Column(db.String(512), nullable=False)  # 背景图片URL
+    file_size = db.Column(db.Integer)  # 文件大小（字节）
+    width = db.Column(db.Integer)  # 图片宽度
+    height = db.Column(db.Integer)  # 图片高度
+    is_default = db.Column(db.Boolean, default=False, index=True)  # 是否为默认背景
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'filename': self.filename,
+            'url': self.url,
+            'file_size': self.file_size,
+            'width': self.width,
+            'height': self.height,
+            'is_default': self.is_default,
+            'uploaded_at': self.uploaded_at.isoformat() if self.uploaded_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    def __repr__(self):
+        return '<Background {}>'.format(self.filename)
+
+
 # 数据库初始化辅助函数
 def init_db():
     """初始化数据库（创建表）"""

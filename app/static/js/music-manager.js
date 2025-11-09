@@ -694,7 +694,39 @@ class MusicManager {
 
 // 初始化
 let musicManager;
-document.addEventListener('DOMContentLoaded', () => {
+
+// 初始化音乐管理器（可被外部调用）
+function initMusicManager() {
+    // 如果已经存在实例，先销毁
+    if (musicManager) {
+        // 清理事件监听器（如果需要）
+        musicManager = null;
+    }
+    
+    // 检查必要的元素是否存在
+    const adminToken = document.getElementById('adminToken');
+    if (!adminToken) {
+        console.warn('音乐管理页面元素未找到，跳过初始化');
+        return;
+    }
+    
+    // 创建新实例
     musicManager = new MusicManager();
+    
+    // 将实例暴露到全局，方便调试
+    window.musicManager = musicManager;
+}
+
+// DOMContentLoaded 时初始化（首次页面加载）
+document.addEventListener('DOMContentLoaded', () => {
+    initMusicManager();
+});
+
+// 监听页面加载事件（AJAX 导航后触发）
+window.addEventListener('pageLoaded', (event) => {
+    // 延迟一点时间，确保 DOM 已更新
+    setTimeout(() => {
+        initMusicManager();
+    }, 100);
 });
 
