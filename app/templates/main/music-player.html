@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>音乐播放器</title>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- 音乐播放器 CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/music-player.css') }}">
+    
+    <style>
+        /* 确保播放器页面没有边距和滚动条 */
+        html, body {
+            margin: 0;
+            padding: 0;
+            overflow: visible;
+            height: auto;
+            min-height: 70px;
+            width: 100%;
+            background: transparent;
+        }
+        
+        /* 调整播放器容器样式，适配iframe */
+        .music-player-container {
+            position: relative !important;
+            min-height: 70px;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.95) 0%, rgba(118, 75, 162, 0.95) 100%);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 12px 0;
+        }
+        
+        /* 播放列表需要能够超出iframe显示 */
+        .music-player-playlist {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 400px;
+            overflow-y: auto;
+            z-index: 10000;
+            margin-top: 0;
+        }
+        
+        /* 当播放列表显示时，确保body能够扩展 */
+        body.playlist-open {
+            overflow: visible;
+            min-height: 470px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 音乐播放器 -->
+    <div id="musicPlayer" class="music-player-container">
+        <div class="music-player">
+            <!-- 控制按钮 -->
+            <div class="music-player-controls">
+                <button id="musicPrev" class="music-player-btn" title="上一首">
+                    <i class="fas fa-step-backward"></i>
+                </button>
+                <button id="musicPlayPause" class="music-player-btn play-pause" title="播放/暂停">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button id="musicNext" class="music-player-btn" title="下一首">
+                    <i class="fas fa-step-forward"></i>
+                </button>
+            </div>
+            
+            <!-- 歌曲信息 -->
+            <div class="music-player-info">
+                <div class="music-player-title" id="musicTitle">加载中...</div>
+                <div class="music-player-artist" id="musicArtist">--</div>
+            </div>
+            
+            <!-- 波形动画 -->
+            <div class="music-player-waves" id="musicWaves">
+                <div class="music-player-wave"></div>
+                <div class="music-player-wave"></div>
+                <div class="music-player-wave"></div>
+                <div class="music-player-wave"></div>
+                <div class="music-player-wave"></div>
+            </div>
+            
+            <!-- 进度条 -->
+            <div class="music-player-progress-container">
+                <div class="music-player-time" id="musicCurrentTime">0:00</div>
+                <div class="music-player-progress" id="musicProgress">
+                    <div class="music-player-progress-bar" id="musicProgressBar"></div>
+                </div>
+                <div class="music-player-time" id="musicDuration">0:00</div>
+            </div>
+            
+            <!-- 音量控制 -->
+            <div class="music-player-volume">
+                <button id="musicVolumeBtn" class="music-player-btn" title="音量">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+                <div class="music-player-volume-slider" id="musicVolumeSlider">
+                    <div class="music-player-volume-bar" id="musicVolumeBar"></div>
+                </div>
+            </div>
+            
+            <!-- 播放列表按钮 -->
+            <div class="music-player-playlist-btn">
+                <button id="musicPlaylistBtn" class="music-player-btn" title="播放列表">
+                    <i class="fas fa-list"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 播放列表 -->
+        <div class="music-player-playlist" id="musicPlaylist">
+            <!-- 播放列表项将通过JavaScript动态生成 -->
+        </div>
+    </div>
+    
+    <!-- 音乐播放器 JS -->
+    <script src="{{ url_for('static', filename='js/music-player.js') }}"></script>
+</body>
+</html>
+

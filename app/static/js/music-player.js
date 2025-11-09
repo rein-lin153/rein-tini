@@ -209,6 +209,23 @@ class MusicPlayer {
         const playlist = document.getElementById('musicPlaylist');
         if (playlist) {
             playlist.classList.toggle('show', this.isPlaylistOpen);
+            
+            // 如果是iframe环境，调整iframe高度以显示播放列表
+            if (window.self !== window.top) {
+                const iframe = window.frameElement;
+                if (iframe) {
+                    if (this.isPlaylistOpen) {
+                        // 显示播放列表时，增加iframe高度
+                        const playlistHeight = Math.min(400, this.playlist.length * 60 + 20);
+                        iframe.style.height = (70 + playlistHeight) + 'px';
+                        document.body.classList.add('playlist-open');
+                    } else {
+                        // 隐藏播放列表时，恢复iframe高度
+                        iframe.style.height = '70px';
+                        document.body.classList.remove('playlist-open');
+                    }
+                }
+            }
         }
     }
     
@@ -314,7 +331,10 @@ class MusicPlayer {
                 if (this.isPlaying) {
                     this.audio.play();
                 }
-                this.togglePlaylist();
+                // 如果播放列表是打开的，关闭它
+                if (this.isPlaylistOpen) {
+                    this.togglePlaylist();
+                }
             });
             
             playlist.appendChild(item);

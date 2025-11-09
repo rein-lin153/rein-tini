@@ -62,6 +62,12 @@ def about():
                          anniversaries=anniversaries)
 
 
+@bp.route('/music-player')
+def music_player():
+    """独立的音乐播放器页面（用于iframe）"""
+    return render_template('main/music-player.html')
+
+
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
