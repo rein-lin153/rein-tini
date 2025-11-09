@@ -41,6 +41,9 @@ class Config:
     PHOTOS_FOLDER = os.path.join(UPLOAD_FOLDER, 'photos')
     THUMBS_FOLDER = os.path.join(UPLOAD_FOLDER, 'thumbs')
     BACKGROUNDS_FOLDER = os.path.join(UPLOAD_FOLDER, 'backgrounds')
+
+    # 新增：音乐目录（默认）
+    MUSIC_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'music')
     
     # 文件大小限制（5MB）
     MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 5 * 1024 * 1024))
