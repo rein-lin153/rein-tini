@@ -48,28 +48,47 @@ class BackgroundManager {
     async loadBackgrounds() {
         try {
             const response = await fetch('/api/backgrounds');
+            const data = await response.json();
+            
             if (!response.ok) {
-                throw new Error('获取背景列表失败');
+                // 如果是 503 错误，说明表不存在，显示友好提示
+                if (response.status === 503) {
+                    console.warn('数据库表不存在，需要初始化');
+                    this.showToast('数据库表不存在，请运行: python scripts/init_db.py', 'warning');
+                } else {
+                    throw new Error(data.error || '获取背景列表失败');
+                }
             }
             
-            const data = await response.json();
             this.renderBackgroundList(data.backgrounds || []);
             
         } catch (error) {
             console.error('加载背景列表失败:', error);
             this.showToast('加载背景列表失败: ' + error.message, 'error');
+            // 显示空列表
+            const container = document.getElementById('backgroundListContainer');
+            if (container) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-image"></i>
+                        <p>加载失败，请刷新页面重试</p>
+                    </div>
+                `;
+            }
         }
     }
     
     async loadDefaultBackground() {
         try {
             const response = await fetch('/api/backgrounds/default');
-            if (!response.ok) {
-                throw new Error('获取默认背景失败');
-            }
-            
             const data = await response.json();
-            this.renderDefaultBackground(data);
+            
+            // 即使响应不是 200，也要尝试渲染（可能是 200 但返回空数据）
+            if (response.ok || response.status === 200) {
+                this.renderDefaultBackground(data);
+            } else {
+                throw new Error(data.error || '获取默认背景失败');
+            }
             
         } catch (error) {
             console.error('加载默认背景失败:', error);

@@ -232,6 +232,26 @@ def check_admin_auth():
     return False, '无权访问，需要管理员权限或有效的上传令牌'
 
 
+def ensure_backgrounds_table():
+    """确保背景表存在，如果不存在则尝试创建"""
+    try:
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        if 'backgrounds' not in inspector.get_table_names():
+            current_app.logger.warning('Backgrounds table does not exist, attempting to create...')
+            try:
+                db.create_all()
+                current_app.logger.info('Backgrounds table created successfully')
+                return True
+            except Exception as create_error:
+                current_app.logger.error(f'Failed to create backgrounds table: {str(create_error)}')
+                return False
+        return True
+    except Exception as e:
+        current_app.logger.error(f'Error checking backgrounds table: {str(e)}')
+        return False
+
+
 @bp.route('/backgrounds', methods=['GET'])
 def list_backgrounds():
     """
@@ -251,13 +271,25 @@ def list_backgrounds():
     }
     """
     try:
+        # 确保表存在
+        if not ensure_backgrounds_table():
+            return jsonify({
+                'error': '数据库表不存在，请运行: python scripts/init_db.py',
+                'backgrounds': []
+            }), 503
+        
         backgrounds = Background.query.order_by(Background.is_default.desc(), Background.uploaded_at.desc()).all()
         return jsonify({
             'backgrounds': [bg.to_dict() for bg in backgrounds]
         })
     except Exception as e:
         current_app.logger.error(f'获取背景列表失败: {str(e)}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({
+            'error': str(e),
+            'backgrounds': []
+        }), 500
 
 
 @bp.route('/backgrounds', methods=['POST'])
@@ -279,6 +311,10 @@ def upload_background():
     }
     """
     try:
+        # 确保表存在
+        if not ensure_backgrounds_table():
+            return jsonify({'error': '数据库表不存在，请运行: python scripts/init_db.py'}), 503
+        
         # 检查管理员权限
         is_admin, error_msg = check_admin_auth()
         if not is_admin:
@@ -307,7 +343,11 @@ def upload_background():
             return jsonify({'error': '文件过大，最大 5MB'}), 400
         
         # 保存文件
-        from PIL import Image
+        try:
+            from PIL import Image
+        except ImportError:
+            return jsonify({'error': 'PIL/Pillow 库未安装，请安装: pip install Pillow'}), 500
+        
         import uuid
         from werkzeug.utils import secure_filename
         
@@ -336,6 +376,9 @@ def upload_background():
         # 保存图片
         img.save(file_path, 'JPEG', quality=85, optimize=True)
         
+        # 更新文件大小（保存后可能不同）
+        file_size = os.path.getsize(file_path)
+        
         # 创建数据库记录
         background = Background(
             filename=filename,
@@ -355,6 +398,9 @@ def upload_background():
     
     except Exception as e:
         current_app.logger.error(f'上传背景失败: {str(e)}', exc_info=True)
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        db.session.rollback()
         return jsonify({'error': f'上传失败: {str(e)}'}), 500
 
 
@@ -372,6 +418,10 @@ def delete_background(bg_id):
     }
     """
     try:
+        # 确保表存在
+        if not ensure_backgrounds_table():
+            return jsonify({'error': '数据库表不存在，请运行: python scripts/init_db.py'}), 503
+        
         # 检查管理员权限
         is_admin, error_msg = check_admin_auth()
         if not is_admin:
@@ -402,6 +452,9 @@ def delete_background(bg_id):
     
     except Exception as e:
         current_app.logger.error(f'删除背景失败: {str(e)}', exc_info=True)
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        db.session.rollback()
         return jsonify({'error': f'删除失败: {str(e)}'}), 500
 
 
@@ -421,6 +474,10 @@ def set_default_background(bg_id):
     }
     """
     try:
+        # 确保表存在
+        if not ensure_backgrounds_table():
+            return jsonify({'error': '数据库表不存在，请运行: python scripts/init_db.py'}), 503
+        
         # 检查管理员权限
         is_admin, error_msg = check_admin_auth()
         if not is_admin:
@@ -441,6 +498,9 @@ def set_default_background(bg_id):
     
     except Exception as e:
         current_app.logger.error(f'设置默认背景失败: {str(e)}', exc_info=True)
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        db.session.rollback()
         return jsonify({'error': f'设置失败: {str(e)}'}), 500
 
 
@@ -457,13 +517,19 @@ def get_default_background():
     }
     """
     try:
+        # 确保表存在
+        if not ensure_backgrounds_table():
+            return jsonify({'url': None, 'message': '未设置默认背景'}), 200
+        
         background = Background.query.filter_by(is_default=True).first()
         if not background:
             return jsonify({'url': None, 'message': '未设置默认背景'})
         return jsonify(background.to_dict())
     except Exception as e:
         current_app.logger.error(f'获取默认背景失败: {str(e)}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        return jsonify({'url': None, 'message': '未设置默认背景', 'error': str(e)}), 200
 
 
 
