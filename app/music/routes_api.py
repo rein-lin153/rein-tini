@@ -33,10 +33,16 @@ def check_admin_auth():
         if not validate_upload_token(token, admin_token):
             return False, '无效的上传令牌'
         return True, None
-    elif current_user.is_authenticated and current_user.is_admin:
-        return True, None
-    else:
-        return False, '无权访问，需要管理员权限或有效的上传令牌'
+    
+    # 尝试从 session 验证
+    try:
+        if current_user.is_authenticated and current_user.is_admin:
+            return True, None
+    except:
+        # 如果无法访问 current_user，返回 False
+        pass
+    
+    return False, '无权访问，需要管理员权限或有效的上传令牌'
 
 
 @bp.route('/api/music', methods=['GET'])
@@ -76,6 +82,19 @@ def list_music():
     }
     """
     try:
+        # 检查数据库表是否存在
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        if 'music' not in inspector.get_table_names():
+            return jsonify({
+                'error': 'Music table does not exist. Please run: python scripts/create_music_table.py',
+                'total': 0,
+                'page': 1,
+                'per_page': 20,
+                'pages': 0,
+                'items': []
+            }), 503
+        
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         query = request.args.get('q', '').strip()
@@ -122,6 +141,12 @@ def get_music(music_id):
     }
     """
     try:
+        # 检查数据库表是否存在
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        if 'music' not in inspector.get_table_names():
+            return jsonify({'error': 'Music table does not exist. Please run: python scripts/create_music_table.py'}), 503
+        
         manager = get_music_manager()
         music = manager.get_music_by_id(music_id)
         

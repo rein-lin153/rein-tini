@@ -36,8 +36,18 @@ def get_music_list():
         # 使用数据库管理器（优先）或JSON索引（兼容）
         try:
             from app.music.models_db import MusicManager
-            manager = MusicManager()
-            music_list = manager.get_playlist_format(enabled_only=True)
+            from app.models import Music
+            from app.extensions import db
+            
+            # 检查表是否存在
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            if 'music' in inspector.get_table_names():
+                manager = MusicManager()
+                music_list = manager.get_playlist_format(enabled_only=True)
+            else:
+                # 表不存在，使用 JSON 索引
+                raise Exception('Music table does not exist')
         except Exception as e:
             current_app.logger.warning(f'使用数据库失败，回退到JSON索引: {str(e)}')
             # 回退到JSON索引
