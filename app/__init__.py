@@ -155,7 +155,7 @@ def register_context_processors(app):
             'COUPLE_NAME_1': app.config['COUPLE_NAME_1'],
             'COUPLE_NAME_2': app.config['COUPLE_NAME_2'],
             'TOGETHER_DATE': app.config['TOGETHER_DATE'],
-            'ENABLE_BACKGROUND_MUSIC': app.config['ENABLE_BACKGROUND_MUSIC'],
+            'ENABLE_BACKGROUND_MUSIC': app.config.get('ENABLE_BACKGROUND_MUSIC', True),
             'ENABLE_MESSAGE_BOARD': app.config['ENABLE_MESSAGE_BOARD'],
             'ENABLE_COMMENTS': app.config['ENABLE_COMMENTS']
         }

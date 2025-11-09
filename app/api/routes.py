@@ -209,12 +209,23 @@ def upload_photo():
 def get_music_list():
     """获取音乐列表"""
     import os
-    from pathlib import Path
     
     music_folder = current_app.config.get('MUSIC_FOLDER')
-    if not music_folder or not os.path.exists(music_folder):
+    current_app.logger.info('音乐文件夹路径: {}'.format(music_folder))
+    
+    if not music_folder:
+        current_app.logger.warning('MUSIC_FOLDER 配置未找到')
         return jsonify({
-            'success': True,
+            'success': False,
+            'error': '音乐文件夹配置未找到',
+            'music_list': []
+        })
+    
+    if not os.path.exists(music_folder):
+        current_app.logger.warning('音乐文件夹不存在: {}'.format(music_folder))
+        return jsonify({
+            'success': False,
+            'error': '音乐文件夹不存在: {}'.format(music_folder),
             'music_list': []
         })
     
@@ -222,9 +233,15 @@ def get_music_list():
     music_list = []
     
     try:
-        for file in os.listdir(music_folder):
-            if os.path.isfile(os.path.join(music_folder, file)):
+        files = os.listdir(music_folder)
+        current_app.logger.info('音乐文件夹中的文件: {}'.format(files))
+        
+        for file in files:
+            file_path = os.path.join(music_folder, file)
+            if os.path.isfile(file_path):
                 ext = file.rsplit('.', 1)[-1].lower() if '.' in file else ''
+                current_app.logger.debug('检查文件: {}, 扩展名: {}'.format(file, ext))
+                
                 if ext in allowed_extensions:
                     # 从文件名提取标题（去掉扩展名）
                     title = file.rsplit('.', 1)[0]
@@ -243,15 +260,23 @@ def get_music_list():
                         'artist': artist,
                         'url': '/static/music/{}'.format(file)
                     })
+                    current_app.logger.info('添加音乐: {} - {}'.format(artist, song_title))
         
         # 按文件名排序
         music_list.sort(key=lambda x: x['title'])
+        current_app.logger.info('找到 {} 首音乐'.format(len(music_list)))
         
     except Exception as e:
-        current_app.logger.error('获取音乐列表失败: {}'.format(str(e)))
+        current_app.logger.error('获取音乐列表失败: {}'.format(str(e)), exc_info=True)
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'music_list': []
+        })
     
     return jsonify({
         'success': True,
-        'music_list': music_list
+        'music_list': music_list,
+        'count': len(music_list)
     })
 

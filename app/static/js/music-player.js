@@ -102,16 +102,27 @@ class MusicPlayer {
         try {
             const response = await fetch('/api/music/list');
             const data = await response.json();
+            console.log('音乐列表API响应:', data);
             if (data.success && data.music_list) {
                 this.playlist = data.music_list;
+                console.log('加载到 ' + this.playlist.length + ' 首歌曲');
                 if (this.playlist.length > 0) {
                     this.currentTrackIndex = 0;
                     this.loadTrack(this.currentTrackIndex);
                     this.renderPlaylist();
+                    // 更新UI显示
+                    this.updateTrackInfo(this.playlist[0]);
+                } else {
+                    console.warn('播放列表为空，请检查音乐文件是否在 app/static/music/ 目录');
+                    this.updateTrackInfo({ title: '暂无音乐', artist: '请将音乐文件放入 app/static/music/ 目录' });
                 }
+            } else {
+                console.error('API返回失败:', data);
+                this.updateTrackInfo({ title: '加载失败', artist: '请检查API配置' });
             }
         } catch (error) {
             console.error('加载播放列表失败:', error);
+            this.updateTrackInfo({ title: '加载失败', artist: '网络错误: ' + error.message });
         }
     }
     
