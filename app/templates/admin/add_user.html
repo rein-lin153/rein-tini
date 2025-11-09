@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}添加用户 - {{ SITE_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-plus"></i> 添加用户
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin.add_user') }}">
+                    {{ form.hidden_tag() }}
+                    
+                    <div class="mb-3">
+                        {{ form.username.label(class="form-label") }}
+                        {{ form.username(class="form-control" + (" is-invalid" if form.username.errors else "")) }}
+                        {% if form.username.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.username.errors %}
+                            <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">用户名将用于登录，长度为 3-64 个字符</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.display_name.label(class="form-label") }}
+                        {{ form.display_name(class="form-control" + (" is-invalid" if form.display_name.errors else "")) }}
+                        {% if form.display_name.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.display_name.errors %}
+                            <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">显示名称将显示在网站中</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.password.label(class="form-label") }}
+                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else "")) }}
+                        {% if form.password.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.password.errors %}
+                            <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">密码至少需要 6 个字符</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.password_confirm.label(class="form-label") }}
+                        {{ form.password_confirm(class="form-control" + (" is-invalid" if form.password_confirm.errors else "")) }}
+                        {% if form.password_confirm.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.password_confirm.errors %}
+                            <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.is_admin(class="form-check-input") }}
+                            {{ form.is_admin.label(class="form-check-label") }}
+                        </div>
+                        <small class="form-text text-muted">管理员可以访问用户管理和站点设置</small>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> 取消
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

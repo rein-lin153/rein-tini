@@ -109,6 +109,9 @@ def register_blueprints(app):
     from app.message import bp as message_bp
     app.register_blueprint(message_bp, url_prefix='/messages')
     
+    from app.admin import bp as admin_bp
+    app.register_blueprint(admin_bp)
+    
     if app.config['ENABLE_API']:
         from app.api import bp as api_bp
         app.register_blueprint(api_bp, url_prefix='/api')

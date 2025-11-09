@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}编辑用户 - {{ SITE_TITLE }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-user-edit"></i> 编辑用户：{{ user.username }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('admin.edit_user', user_id=user.id) }}">
+                    {{ form.hidden_tag() }}
+                    {{ form.user_id() }}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">用户名</label>
+                        <input type="text" class="form-control" value="{{ user.username }}" disabled>
+                        <small class="form-text text-muted">用户名不可修改</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.display_name.label(class="form-label") }}
+                        {{ form.display_name(class="form-control" + (" is-invalid" if form.display_name.errors else "")) }}
+                        {% if form.display_name.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.display_name.errors %}
+                            <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.password.label(class="form-label") }}
+                        {{ form.password(class="form-control" + (" is-invalid" if form.password.errors else ""), id="password") }}
+                        {% if form.password.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.password.errors %}
+                            <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <small class="form-text text-muted">留空则不修改密码</small>
+                    </div>
+                    
+                    <div class="mb-3" id="password-confirm-group" style="display: none;">
+                        {{ form.password_confirm.label(class="form-label") }}
+                        {{ form.password_confirm(class="form-control" + (" is-invalid" if form.password_confirm.errors else ""), id="password_confirm") }}
+                        {% if form.password_confirm.errors %}
+                        <div class="invalid-feedback">
+                            {% for error in form.password_confirm.errors %}
+                            <div>{{ error }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {% if user.id == current_user.id %}
+                            {{ form.is_admin(class="form-check-input", disabled=True) }}
+                            {{ form.is_admin.label(class="form-check-label") }}
+                            <small class="form-text text-warning d-block">
+                                <i class="fas fa-exclamation-triangle"></i> 您不能修改自己的管理员权限
+                            </small>
+                            {% else %}
+                            {{ form.is_admin(class="form-check-input") }}
+                            {{ form.is_admin.label(class="form-check-label") }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('admin.users') }}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> 取消
+                        </a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordField = document.getElementById('password');
+    const passwordConfirmGroup = document.getElementById('password-confirm-group');
+    const passwordConfirmField = document.getElementById('password_confirm');
+    
+    if (passwordField && passwordConfirmGroup && passwordConfirmField) {
+        // 监听密码字段输入
+        passwordField.addEventListener('input', function() {
+            if (this.value.trim()) {
+                // 有输入，显示确认密码字段
+                passwordConfirmGroup.style.display = 'block';
+                passwordConfirmField.setAttribute('required', 'required');
+            } else {
+                // 无输入，隐藏确认密码字段
+                passwordConfirmGroup.style.display = 'none';
+                passwordConfirmField.removeAttribute('required');
+                passwordConfirmField.value = '';
+            }
+        });
+        
+        // 初始化：如果密码字段为空，隐藏确认密码字段
+        if (!passwordField.value || passwordField.value.trim() === '') {
+            passwordConfirmGroup.style.display = 'none';
+            passwordConfirmField.removeAttribute('required');
+        } else {
+            passwordConfirmGroup.style.display = 'block';
+            passwordConfirmField.setAttribute('required', 'required');
+        }
+    }
+});
+</script>
+{% endblock %}
+
