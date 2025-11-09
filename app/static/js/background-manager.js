@@ -203,28 +203,45 @@ class BackgroundManager {
             });
             
             xhr.addEventListener('load', () => {
-                if (xhr.status === 201) {
-                    const background = JSON.parse(xhr.responseText);
-                    this.showToast('上传成功！', 'success');
-                    
-                    // 关闭 Modal
-                    const uploadModal = bootstrap.Modal.getInstance(document.getElementById('uploadBackgroundModal'));
-                    uploadModal.hide();
-                    
-                    // 刷新列表
-                    this.loadBackgrounds();
-                    this.loadDefaultBackground();
-                    
-                    // 更新页面背景（如果当前是默认背景）
-                    this.updatePageBackground();
-                } else {
-                    const error = JSON.parse(xhr.responseText);
-                    this.showToast('上传失败: ' + (error.error || '未知错误'), 'error');
-                }
-                
                 progressBar.style.display = 'none';
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-upload"></i> 上传';
+                
+                if (xhr.status === 201) {
+                    try {
+                        const background = JSON.parse(xhr.responseText);
+                        this.showToast('上传成功！', 'success');
+                        
+                        // 关闭 Modal
+                        const uploadModal = bootstrap.Modal.getInstance(document.getElementById('uploadBackgroundModal'));
+                        uploadModal.hide();
+                        
+                        // 刷新列表
+                        this.loadBackgrounds();
+                        this.loadDefaultBackground();
+                        
+                        // 更新页面背景（如果当前是默认背景）
+                        this.updatePageBackground();
+                    } catch (e) {
+                        console.error('解析响应失败:', e);
+                        this.showToast('上传成功，但解析响应失败', 'warning');
+                    }
+                } else {
+                    // 尝试解析错误响应
+                    let errorMsg = '上传失败';
+                    try {
+                        const error = JSON.parse(xhr.responseText);
+                        errorMsg = error.error || errorMsg;
+                    } catch (e) {
+                        // 如果不是 JSON，可能是 HTML 错误页面
+                        if (xhr.responseText.includes('<!DOCTYPE')) {
+                            errorMsg = `上传失败: HTTP ${xhr.status} (服务器返回了错误页面)`;
+                        } else {
+                            errorMsg = `上传失败: HTTP ${xhr.status}`;
+                        }
+                    }
+                    this.showToast(errorMsg, 'error');
+                }
             });
             
             xhr.addEventListener('error', () => {

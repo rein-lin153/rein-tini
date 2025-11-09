@@ -7,7 +7,7 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from flask import Flask, render_template
+from flask import Flask, render_template, jsonify
 from app.config import get_config
 from app.extensions import db, login_manager, csrf, limiter
 from app.models import enable_wal_mode
@@ -140,27 +140,49 @@ def register_blueprints(app):
 
 def register_error_handlers(app):
     """注册错误处理器"""
+    from flask import request
+    
+    def is_api_request():
+        """检查是否是 API 请求"""
+        return request.path.startswith('/api/') or request.path.startswith('/music/api/')
     
     @app.errorhandler(400)
     def bad_request(error):
+        if is_api_request():
+            return jsonify({'error': '请求错误', 'message': str(error)}), 400
         return render_template('errors/400.html'), 400
     
     @app.errorhandler(403)
     def forbidden(error):
+        if is_api_request():
+            return jsonify({'error': '禁止访问', 'message': '无权访问此资源'}), 403
         return render_template('errors/403.html'), 403
     
     @app.errorhandler(404)
     def not_found(error):
+        if is_api_request():
+            return jsonify({'error': '资源不存在', 'message': '请求的资源未找到'}), 404
         return render_template('errors/404.html'), 404
     
     @app.errorhandler(500)
     def internal_server_error(error):
         db.session.rollback()
+        if is_api_request():
+            return jsonify({'error': '服务器内部错误', 'message': '服务器处理请求时发生错误'}), 500
         return render_template('errors/500.html'), 500
     
     @app.errorhandler(413)
     def request_entity_too_large(error):
+        if is_api_request():
+            return jsonify({'error': '文件过大', 'message': '上传的文件超过了允许的大小限制'}), 413
         return render_template('errors/413.html'), 413
+    
+    @app.errorhandler(422)
+    def unprocessable_entity(error):
+        """处理 CSRF 验证失败等 422 错误"""
+        if is_api_request():
+            return jsonify({'error': '验证失败', 'message': '请求验证失败，请检查请求格式'}), 422
+        return render_template('errors/400.html'), 422
 
 
 def register_context_processors(app):

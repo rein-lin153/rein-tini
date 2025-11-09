@@ -12,7 +12,7 @@ from app.music.utils import (
     save_music_file, save_cover_file, validate_upload_token,
     get_audio_duration, delete_file_safely
 )
-from app.extensions import db
+from app.extensions import db, csrf
 
 
 def get_music_manager() -> MusicManager:
@@ -238,6 +238,7 @@ def get_music(music_id):
 
 
 @bp.route('/api/music', methods=['POST'])
+@csrf.exempt
 def create_music():
     """
     上传音乐文件（管理员）
@@ -353,6 +354,7 @@ def create_music():
 
 
 @bp.route('/api/music/<int:music_id>', methods=['PUT'])
+@csrf.exempt
 def update_music(music_id):
     """
     更新音乐元数据（管理员）
@@ -451,6 +453,7 @@ def update_music(music_id):
 
 
 @bp.route('/api/music/<int:music_id>', methods=['DELETE'])
+@csrf.exempt
 def delete_music(music_id):
     """
     删除音乐（管理员）
@@ -501,6 +504,7 @@ def delete_music(music_id):
 
 
 @bp.route('/api/music/batch-delete', methods=['POST'])
+@csrf.exempt
 def batch_delete_music():
     """
     批量删除音乐（管理员）

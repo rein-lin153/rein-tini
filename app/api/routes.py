@@ -10,7 +10,7 @@ from flask_login import login_required, current_user
 from app.api import bp
 from app.models import Post, Photo, Comment, Anniversary, User, Background
 from app.main.utils import get_days_together, get_next_anniversary
-from app.extensions import db
+from app.extensions import db, csrf
 
 
 @bp.route('/status')
@@ -293,6 +293,7 @@ def list_backgrounds():
 
 
 @bp.route('/backgrounds', methods=['POST'])
+@csrf.exempt
 @login_required
 def upload_background():
     """
@@ -405,6 +406,7 @@ def upload_background():
 
 
 @bp.route('/backgrounds/<int:bg_id>', methods=['DELETE'])
+@csrf.exempt
 @login_required
 def delete_background(bg_id):
     """
@@ -459,6 +461,7 @@ def delete_background(bg_id):
 
 
 @bp.route('/backgrounds/<int:bg_id>/default', methods=['PUT'])
+@csrf.exempt
 @login_required
 def set_default_background(bg_id):
     """
