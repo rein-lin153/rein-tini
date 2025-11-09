@@ -16,6 +16,9 @@
     <!-- 自定义 CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/animations.css') }}">
+    {% if ENABLE_BACKGROUND_MUSIC %}
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/player-embedded.css') }}">
+    {% endif %}
     
     {% block extra_css %}{% endblock %}
 </head>
@@ -122,19 +125,9 @@
     </div>
     
     <!-- 主内容 -->
-    <main class="container my-4 fade-in">
+    <main class="container my-4 fade-in" id="mainContent">
         {% block content %}{% endblock %}
     </main>
-    
-    <!-- 音乐播放器按钮（浮动） -->
-    {% if ENABLE_BACKGROUND_MUSIC %}
-    <button id="openPlayerBtn" 
-            class="btn btn-primary" 
-            style="position: fixed; bottom: 30px; right: 30px; z-index: 1000; border-radius: 50%; width: 60px; height: 60px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.3s ease; background: linear-gradient(135deg, #ff9ec5, #ffd6e8); border: none;" 
-            title="打开音乐播放器">
-        <i class="fas fa-music"></i>
-    </button>
-    {% endif %}
     
     <!-- 返回顶部按钮 -->
     <button id="backToTopBtn" class="btn btn-primary" 
@@ -142,6 +135,78 @@
             title="返回顶部">
         <i class="fas fa-arrow-up"></i>
     </button>
+    
+    <!-- 内嵌音乐播放器 -->
+    {% if ENABLE_BACKGROUND_MUSIC %}
+    <div class="music-player-embedded hidden" id="embeddedPlayer">
+        <div class="player-embedded-content">
+            <!-- 封面 -->
+            <div class="player-embedded-cover" id="embeddedCover">
+                <div class="player-embedded-cover-placeholder" id="embeddedCoverPlaceholder">
+                    <i class="fas fa-music"></i>
+                </div>
+                <img id="embeddedCoverImg" src="" alt="封面" style="display: none;">
+            </div>
+            
+            <!-- 歌曲信息 -->
+            <div class="player-embedded-info">
+                <div class="player-embedded-title" id="embeddedTitle">加载中...</div>
+                <div class="player-embedded-artist" id="embeddedArtist">--</div>
+            </div>
+            
+            <!-- 控制按钮 -->
+            <div class="player-embedded-controls">
+                <button class="player-embedded-btn" id="embeddedShuffleBtn" title="随机播放">
+                    <i class="fas fa-random"></i>
+                </button>
+                <button class="player-embedded-btn" id="embeddedPrevBtn" title="上一首">
+                    <i class="fas fa-step-backward"></i>
+                </button>
+                <button class="player-embedded-btn player-embedded-btn-primary" id="embeddedPlayPauseBtn" title="播放/暂停">
+                    <i class="fas fa-play"></i>
+                </button>
+                <button class="player-embedded-btn" id="embeddedNextBtn" title="下一首">
+                    <i class="fas fa-step-forward"></i>
+                </button>
+                <button class="player-embedded-btn" id="embeddedRepeatBtn" title="循环播放">
+                    <i class="fas fa-redo"></i>
+                </button>
+            </div>
+            
+            <!-- 进度条 -->
+            <div class="player-embedded-progress" id="embeddedProgressBar">
+                <div class="player-embedded-progress-fill" id="embeddedProgressFill"></div>
+            </div>
+            
+            <!-- 时间显示 -->
+            <div class="player-embedded-time" id="embeddedCurrentTime">0:00</div>
+            <div class="player-embedded-time">/</div>
+            <div class="player-embedded-time" id="embeddedDuration">0:00</div>
+            
+            <!-- 音量控制 -->
+            <div class="player-embedded-volume">
+                <button class="player-embedded-volume-btn" id="embeddedVolumeBtn" title="音量">
+                    <i class="fas fa-volume-up"></i>
+                </button>
+            </div>
+            
+            <!-- 播放列表按钮 -->
+            <div class="player-embedded-playlist-btn">
+                <button class="player-embedded-btn" id="embeddedPlaylistBtn" title="播放列表">
+                    <i class="fas fa-list"></i>
+                    <span class="playlist-badge" id="embeddedPlaylistCount">0</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- 播放列表 -->
+        <div class="player-embedded-playlist" id="embeddedPlaylist">
+            <div id="embeddedPlaylistItems">
+                <!-- 播放列表项将通过 JavaScript 动态生成 -->
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- 页脚 -->
     <footer class="footer mt-5 py-4 bg-light-purple">
@@ -162,6 +227,9 @@
     
     <!-- 自定义 JS -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% if ENABLE_BACKGROUND_MUSIC %}
+    <script src="{{ url_for('static', filename='js/player-embedded.js') }}"></script>
+    {% endif %}
     
     {% block extra_js %}{% endblock %}
 </body>

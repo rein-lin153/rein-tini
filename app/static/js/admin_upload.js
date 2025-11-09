@@ -202,22 +202,18 @@ document.addEventListener('DOMContentLoaded', function() {
     
     function notifyPlayerRefresh() {
         // 通过 localStorage 事件通知播放器刷新
-        const event = new Event('storage');
         localStorage.setItem('musicPlaylistRefresh', Date.now().toString());
         localStorage.removeItem('musicPlaylistRefresh');
         
-        // 通过 postMessage 通知播放器窗口（如果打开）
+        // 通过 postMessage 通知内嵌播放器刷新
         window.postMessage({
             type: 'refreshPlaylist',
             source: 'adminUpload'
         }, '*');
         
-        // 如果播放器窗口存在，直接通知
-        if (window.musicPlayerWindow && !window.musicPlayerWindow.closed) {
-            window.musicPlayerWindow.postMessage({
-                type: 'refreshPlaylist',
-                source: 'adminUpload'
-            }, '*');
+        // 如果内嵌播放器存在，直接刷新
+        if (window.embeddedMusicPlayer) {
+            window.embeddedMusicPlayer.refreshPlaylist();
         }
     }
 });

@@ -202,80 +202,8 @@ if (backToTopBtn) {
     });
 }
 
-/**
- * 打开音乐播放器窗口
- */
-const openPlayerBtn = document.getElementById('openPlayerBtn');
-let musicPlayerWindow = null;
-
-if (openPlayerBtn) {
-    openPlayerBtn.addEventListener('click', function() {
-        // 检查播放器窗口是否已经打开
-        if (musicPlayerWindow && !musicPlayerWindow.closed) {
-            // 如果已打开，聚焦到该窗口
-            musicPlayerWindow.focus();
-        } else {
-            // 打开新的播放器窗口
-            const width = 420;
-            const height = 600;
-            const left = (screen.width - width) / 2;
-            const top = (screen.height - height) / 2;
-            
-            musicPlayerWindow = window.open(
-                '/music/player',
-                'lovemusic',
-                `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=no,status=no`
-            );
-            
-            // 保存窗口引用到全局
-            window.musicPlayerWindow = musicPlayerWindow;
-            
-            // 监听播放器窗口的消息
-            window.addEventListener('message', function(e) {
-                if (e.data && e.data.source === 'musicPlayer') {
-                    handlePlayerMessage(e.data);
-                }
-            });
-        }
-    });
-}
-
-/**
- * 处理来自播放器窗口的消息
- */
-function handlePlayerMessage(message) {
-    switch (message.type) {
-        case 'stateChanged':
-            // 可以在这里更新主窗口的迷你控制器（如果实现）
-            console.log('播放器状态更新:', message.data);
-            break;
-        case 'trackChanged':
-            console.log('当前播放:', message.data);
-            break;
-    }
-}
-
-// 监听播放列表刷新事件
-window.addEventListener('storage', function(e) {
-    if (e.key === 'musicPlaylistRefresh' && musicPlayerWindow && !musicPlayerWindow.closed) {
-        musicPlayerWindow.postMessage({
-            type: 'refreshPlaylist',
-            source: 'mainWindow'
-        }, '*');
-    }
-});
-
-// 监听来自上传页面的消息
-window.addEventListener('message', function(e) {
-    if (e.data && e.data.type === 'refreshPlaylist' && e.data.source === 'adminUpload') {
-        if (musicPlayerWindow && !musicPlayerWindow.closed) {
-            musicPlayerWindow.postMessage({
-                type: 'refreshPlaylist',
-                source: 'mainWindow'
-            }, '*');
-        }
-    }
-});
+// 内嵌播放器已通过 player-embedded.js 处理
+// 不再需要独立窗口逻辑
 
 /**
  * 确认删除
@@ -383,7 +311,7 @@ function initAjaxNavigation() {
         // 5. 下载链接
         // 6. 新窗口打开的链接
         // 7. 表单提交链接
-        // 8. 管理员功能链接（避免复杂状态管理）
+        // 8. 上传/编辑页面（这些页面需要完整刷新以保持表单状态）
         if (href.startsWith('http://') || 
             href.startsWith('https://') || 
             href.startsWith('//') ||
@@ -395,7 +323,7 @@ function initAjaxNavigation() {
             link.target === '_blank' ||
             link.closest('form') ||
             href.includes('/auth/') ||
-            href.includes('/admin/') ||
+            href.includes('/music/admin/upload') ||  // 音乐上传页面需要完整刷新
             href.includes('/album/upload') ||
             href.includes('/album/batch_upload') ||
             href.includes('/posts/new') ||
@@ -454,9 +382,9 @@ function loadPage(url) {
             document.title = doc.title;
         }
         
-        // 更新主内容区域
+        // 更新主内容区域（保持播放器不被刷新）
         const newMainContent = doc.querySelector('main.container');
-        const currentMainContent = document.querySelector('main.container');
+        const currentMainContent = document.querySelector('main.container#mainContent');
         if (newMainContent && currentMainContent) {
             currentMainContent.innerHTML = newMainContent.innerHTML;
             currentMainContent.style.opacity = '1';
@@ -479,8 +407,11 @@ function loadPage(url) {
         // 触发自定义事件，让其他脚本知道页面已更新
         window.dispatchEvent(new CustomEvent('pageLoaded', { detail: { url } }));
         
-        // 滚动到顶部
+        // 滚动到顶部（但不影响播放器）
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // 注意：播放器不会被刷新，因为它不在 mainContent 内
+        // 播放器状态会保持不变，继续播放
     })
     .catch(error => {
         console.error('加载页面失败:', error);
