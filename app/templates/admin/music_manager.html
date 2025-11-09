@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% block title %}音乐管理 - {{ SITE_TITLE }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/music-manager.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-music text-primary"></i> 音乐管理
+            </h2>
+            
+            <!-- 搜索和操作栏 -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-search"></i>
+                                </span>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="searchInput" 
+                                       placeholder="搜索歌曲标题或艺术家...">
+                                <button class="btn btn-primary" id="searchBtn">
+                                    <i class="fas fa-search"></i> 搜索
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-success" id="uploadBtn" data-bs-toggle="modal" data-bs-target="#uploadModal">
+                                <i class="fas fa-upload"></i> 上传音乐
+                            </button>
+                            <button class="btn btn-danger" id="batchDeleteBtn" style="display: none;">
+                                <i class="fas fa-trash"></i> 批量删除
+                            </button>
+                            <button class="btn btn-info" id="exportBtn">
+                                <i class="fas fa-download"></i> 导出 CSV
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 音乐列表 -->
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div id="musicListContainer">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">加载中...</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 分页 -->
+                    <nav aria-label="音乐列表分页">
+                        <ul class="pagination justify-content-center mt-4" id="pagination">
+                            <!-- 分页控件将通过 JavaScript 动态生成 -->
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 上传 Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-upload"></i> 上传音乐
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label class="form-label">音乐文件 <span class="text-danger">*</span></label>
+                        <input type="file" 
+                               class="form-control" 
+                               id="musicFileInput" 
+                               name="file" 
+                               accept=".mp3" 
+                               required>
+                        <div class="form-text">支持 MP3 格式，最大 30MB</div>
+                        <div class="progress mt-2" id="uploadProgress" style="display: none;">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">封面图片 <span class="text-muted">(可选)</span></label>
+                        <input type="file" 
+                               class="form-control" 
+                               id="coverFileInput" 
+                               name="cover" 
+                               accept=".jpg,.jpeg,.png,.webp">
+                        <div class="form-text">支持 JPG, PNG, WEBP 格式，最大 2MB</div>
+                        <div id="coverPreview" class="mt-2"></div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">歌曲标题</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="titleInput" 
+                                       name="title" 
+                                       placeholder="如果不填，将从文件名提取">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">艺术家</label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="artistInput" 
+                                       name="artist" 
+                                       placeholder="如果不填，将从文件名提取">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">排序顺序</label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="orderInput" 
+                                       name="order" 
+                                       value="0" 
+                                       min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">状态</label>
+                                <select class="form-select" id="enabledInput" name="enabled">
+                                    <option value="true" selected>启用</option>
+                                    <option value="false">禁用</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="submitUploadBtn">
+                    <i class="fas fa-upload"></i> 上传
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 编辑 Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit"></i> 编辑音乐
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editForm">
+                    <input type="hidden" id="editMusicId">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">封面图片</label>
+                        <input type="file" 
+                               class="form-control" 
+                               id="editCoverInput" 
+                               name="cover" 
+                               accept=".jpg,.jpeg,.png,.webp">
+                        <div class="form-text">留空则不更改封面</div>
+                        <div id="editCoverPreview" class="mt-2"></div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">歌曲标题 <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="editTitleInput" 
+                                       name="title" 
+                                       required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">艺术家 <span class="text-danger">*</span></label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="editArtistInput" 
+                                       name="artist" 
+                                       required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">排序顺序</label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="editOrderInput" 
+                                       name="order" 
+                                       min="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">状态</label>
+                                <select class="form-select" id="editEnabledInput" name="enabled">
+                                    <option value="true">启用</option>
+                                    <option value="false">禁用</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-primary" id="submitEditBtn">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 隐藏的 token 字段 -->
+<input type="hidden" id="adminToken" value="{{ admin_token }}">
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/music-manager.js') }}"></script>
+{% endblock %}
+

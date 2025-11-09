@@ -589,6 +589,14 @@ class EmbeddedMusicPlayer {
         await this.loadPlaylist();
         this.renderPlaylist();
     }
+    
+    // 通过ID加载指定歌曲
+    loadTrackById(musicId) {
+        const index = this.playlist.findIndex(track => track.id === musicId);
+        if (index >= 0) {
+            this.loadTrack(index);
+        }
+    }
 }
 
 // 初始化播放器（仅在页面加载时初始化一次）

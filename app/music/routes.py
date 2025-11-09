@@ -25,34 +25,41 @@ def get_music_index() -> MusicIndex:
 @bp.route('/list')
 def get_music_list():
     """
-    获取音乐列表
+    获取音乐列表（兼容播放器接口）
     
     GET /music/list
     返回: JSON 列表 [{ id, title, artist, filename, cover, url }]
+    
+    注意：此接口用于播放器，只返回启用的音乐
     """
     try:
-        music_index = get_music_index()
-        
-        # 同步文件系统
-        music_folder = current_app.config['MUSIC_FOLDER']
-        cover_folder = current_app.config['COVER_FOLDER']
-        allowed_extensions = current_app.config.get('ALLOWED_MUSIC_EXTENSIONS', {'mp3'})
-        
-        songs = music_index.sync_with_filesystem(
-            music_folder, cover_folder, allowed_extensions
-        )
-        
-        # 转换为 API 格式
-        music_list = []
-        for song in songs:
-            music_list.append({
-                'id': song.get('id'),
-                'title': song.get('title', '未知歌曲'),
-                'artist': song.get('artist', '未知艺术家'),
-                'filename': song.get('filename'),
-                'cover': song.get('cover'),
-                'url': song.get('url', f"/static/music/{song.get('filename')}")
-            })
+        # 使用数据库管理器（优先）或JSON索引（兼容）
+        try:
+            from app.music.models_db import MusicManager
+            manager = MusicManager()
+            music_list = manager.get_playlist_format(enabled_only=True)
+        except Exception as e:
+            current_app.logger.warning(f'使用数据库失败，回退到JSON索引: {str(e)}')
+            # 回退到JSON索引
+            music_index = get_music_index()
+            music_folder = current_app.config['MUSIC_FOLDER']
+            cover_folder = current_app.config['COVER_FOLDER']
+            allowed_extensions = current_app.config.get('ALLOWED_MUSIC_EXTENSIONS', {'mp3'})
+            
+            songs = music_index.sync_with_filesystem(
+                music_folder, cover_folder, allowed_extensions
+            )
+            
+            music_list = []
+            for song in songs:
+                music_list.append({
+                    'id': song.get('id'),
+                    'title': song.get('title', '未知歌曲'),
+                    'artist': song.get('artist', '未知艺术家'),
+                    'filename': song.get('filename'),
+                    'cover': song.get('cover'),
+                    'url': song.get('url', f"/static/music/{song.get('filename')}")
+                })
         
         # 按标题排序
         music_list.sort(key=lambda x: x['title'])
@@ -343,9 +350,26 @@ def player_page():
 @login_required
 def admin_upload_page():
     """
-    管理员上传页面
+    管理员上传页面（旧版，重定向到管理页面）
     
     GET /music/admin/upload
+    返回: 重定向到管理页面
+    """
+    if not current_user.is_admin:
+        from flask import flash, redirect, url_for
+        flash('您没有权限访问此页面', 'danger')
+        return redirect(url_for('main.index'))
+    
+    return redirect(url_for('music.admin_manager'))
+
+
+@bp.route('/admin/manager')
+@login_required
+def admin_manager():
+    """
+    音乐管理页面
+    
+    GET /music/admin/manager
     返回: HTML 页面
     """
     if not current_user.is_admin:
@@ -354,5 +378,5 @@ def admin_upload_page():
         return redirect(url_for('main.index'))
     
     admin_token = current_app.config.get('ADMIN_UPLOAD_TOKEN', 'changeme123')
-    return render_template('admin/music_upload.html', admin_token=admin_token)
+    return render_template('admin/music_manager.html', admin_token=admin_token)
 

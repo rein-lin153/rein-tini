@@ -175,6 +175,45 @@ class SiteSetting(db.Model):
         return '<SiteSetting {}={}>'.format(self.key, self.value[:20] if self.value else '')
 
 
+class Music(db.Model):
+    """音乐模型"""
+    
+    __tablename__ = 'music'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(256), nullable=False, index=True)
+    artist = db.Column(db.String(128), nullable=False, index=True)
+    filename = db.Column(db.String(256), nullable=False, unique=True, index=True)
+    cover = db.Column(db.String(256))  # 封面文件路径（相对于static）
+    url = db.Column(db.String(512), nullable=False)  # 音乐文件URL
+    duration = db.Column(db.Float)  # 时长（秒）
+    file_size = db.Column(db.Integer)  # 文件大小（字节）
+    order = db.Column(db.Integer, default=0, index=True)  # 排序顺序
+    enabled = db.Column(db.Boolean, default=True, index=True)  # 是否启用
+    uploaded_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        """转换为字典"""
+        return {
+            'id': self.id,
+            'title': self.title,
+            'artist': self.artist,
+            'filename': self.filename,
+            'cover': self.cover,
+            'url': self.url,
+            'duration': self.duration,
+            'file_size': self.file_size,
+            'order': self.order,
+            'enabled': self.enabled,
+            'uploaded_at': self.uploaded_at.isoformat() if self.uploaded_at else None,
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None
+        }
+    
+    def __repr__(self):
+        return '<Music {} - {}>'.format(self.artist, self.title)
+
+
 # 数据库初始化辅助函数
 def init_db():
     """初始化数据库（创建表）"""
