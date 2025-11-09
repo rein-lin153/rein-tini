@@ -7,7 +7,7 @@ from flask import render_template, request, flash, redirect, url_for, current_ap
 from flask_login import login_required, current_user
 from app.main import bp
 from app.main.utils import get_days_together, get_next_anniversary, get_love_percentage
-from app.models import Photo, Post, Comment, Anniversary, SiteSetting
+from app.models import Photo, Post, Comment, Anniversary, SiteSetting, Background
 from app.extensions import db
 
 
@@ -35,8 +35,12 @@ def index():
     latest_comments = Comment.query.filter_by(post_id=None, photo_id=None) \
         .order_by(Comment.created_at.desc()).limit(5).all()
     
-    # 获取自定义背景（如果有）
-    custom_bg = SiteSetting.get('background_image')
+    # 获取默认背景图片
+    default_background = None
+    try:
+        default_background = Background.query.filter_by(is_default=True).first()
+    except Exception as e:
+        current_app.logger.warning(f'获取默认背景失败: {str(e)}')
     
     return render_template('index.html',
                          days_together=days_together,
@@ -45,7 +49,7 @@ def index():
                          latest_photos=latest_photos,
                          latest_posts=latest_posts,
                          latest_comments=latest_comments,
-                         custom_bg=custom_bg)
+                         default_background=default_background)
 
 
 @bp.route('/about')

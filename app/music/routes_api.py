@@ -262,6 +262,20 @@ def create_music():
     }
     """
     try:
+        # 检查数据库表是否存在
+        from sqlalchemy import inspect
+        inspector = inspect(db.engine)
+        if 'music' not in inspector.get_table_names():
+            current_app.logger.warning('Music table does not exist, attempting to create...')
+            try:
+                db.create_all()
+                current_app.logger.info('Music table created successfully')
+            except Exception as create_error:
+                current_app.logger.error(f'Failed to create music table: {str(create_error)}')
+                import traceback
+                current_app.logger.error(traceback.format_exc())
+                return jsonify({'error': '数据库表不存在，请运行: python scripts/init_db.py'}), 503
+        
         # 检查管理员权限
         is_admin, error_msg = check_admin_auth()
         if not is_admin:
@@ -283,34 +297,50 @@ def create_music():
         max_music_size = current_app.config.get('MAX_MUSIC_SIZE', 30 * 1024 * 1024)
         max_cover_size = current_app.config.get('MAX_COVER_SIZE', 2 * 1024 * 1024)
         
+        # 确保目录存在
+        os.makedirs(music_folder, exist_ok=True)
+        os.makedirs(cover_folder, exist_ok=True)
+        
         # 保存音乐文件
         filename, error, file_size = save_music_file(music_file, music_folder, max_music_size)
         if error:
+            current_app.logger.error(f'保存音乐文件失败: {error}')
             return jsonify({'error': error}), 400
         
         # 获取音频时长
         file_path = os.path.join(music_folder, filename)
-        duration = get_audio_duration(file_path)
+        duration = None
+        try:
+            duration = get_audio_duration(file_path)
+        except Exception as e:
+            current_app.logger.warning(f'获取音频时长失败: {str(e)}')
         
         # 处理封面
         cover_url = None
         if cover_file and cover_file.filename:
-            cover_url, cover_error = save_cover_file(
-                cover_file, cover_folder, filename, max_cover_size
-            )
-            if cover_error:
-                current_app.logger.warning(f'封面上传失败: {cover_error}')
+            try:
+                cover_url, cover_error = save_cover_file(
+                    cover_file, cover_folder, filename, max_cover_size
+                )
+                if cover_error:
+                    current_app.logger.warning(f'封面上传失败: {cover_error}')
+            except Exception as e:
+                current_app.logger.warning(f'处理封面失败: {str(e)}')
         else:
             # 使用默认封面
             default_cover = current_app.config.get('DEFAULT_COVER', '/static/images/default_cover.jpg')
-            if os.path.exists(os.path.join(current_app.config['BASE_DIR'], 'app', 'static', 'images', 'default_cover.jpg')):
+            default_cover_path = os.path.join(current_app.config['BASE_DIR'], 'app', 'static', 'images', 'default_cover.jpg')
+            if os.path.exists(default_cover_path):
                 cover_url = default_cover
         
         # 获取元数据
         title = request.form.get('title', '').strip()
         artist = request.form.get('artist', '').strip()
         enabled = request.form.get('enabled', 'true').lower() == 'true'
-        order = int(request.form.get('order', 0))
+        try:
+            order = int(request.form.get('order', 0))
+        except (ValueError, TypeError):
+            order = 0
         
         # 如果没有提供标题和艺术家，从文件名提取
         if not title or not artist:
@@ -330,26 +360,42 @@ def create_music():
                 artist = artist or '未知艺术家'
         
         # 创建音乐记录
-        manager = get_music_manager()
-        music_data = {
-            'filename': filename,
-            'title': title,
-            'artist': artist,
-            'url': f'/static/music/{filename}',
-            'cover': cover_url,
-            'file_size': file_size,
-            'duration': duration,
-            'order': order,
-            'enabled': enabled
-        }
-        music = manager.create_music(music_data)
-        
-        current_app.logger.info(f'音乐上传成功: {filename} (ID: {music.id})')
-        
-        return jsonify(music.to_dict()), 201
+        try:
+            manager = get_music_manager()
+            music_data = {
+                'filename': filename,
+                'title': title,
+                'artist': artist,
+                'url': f'/static/music/{filename}',
+                'cover': cover_url,
+                'file_size': file_size,
+                'duration': duration,
+                'order': order,
+                'enabled': enabled
+            }
+            music = manager.create_music(music_data)
+            
+            current_app.logger.info(f'音乐上传成功: {filename} (ID: {music.id})')
+            
+            return jsonify(music.to_dict()), 201
+        except Exception as db_error:
+            current_app.logger.error(f'创建音乐记录失败: {str(db_error)}', exc_info=True)
+            import traceback
+            current_app.logger.error(traceback.format_exc())
+            db.session.rollback()
+            # 删除已上传的文件
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except:
+                pass
+            return jsonify({'error': f'创建音乐记录失败: {str(db_error)}'}), 500
     
     except Exception as e:
         current_app.logger.error(f'上传音乐失败: {str(e)}', exc_info=True)
+        import traceback
+        current_app.logger.error(traceback.format_exc())
+        db.session.rollback()
         return jsonify({'error': f'上传失败: {str(e)}'}), 500
 
 

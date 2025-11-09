@@ -126,6 +126,31 @@ img {
     background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
     animation: gradient-shift 10s ease infinite;
     background-size: 200% 200%;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-section-with-bg {
+    animation: none;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.hero-section-with-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.2);
+    z-index: 1;
+}
+
+.hero-content-overlay {
+    position: relative;
+    z-index: 2;
 }
 
 @keyframes gradient-shift {
