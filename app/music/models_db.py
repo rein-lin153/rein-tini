@@ -4,21 +4,104 @@
 提供数据库和JSON文件索引的兼容层
 """
 
-import os
+import os, hashlib
 import json
 import threading
 from datetime import datetime
 from typing import List, Dict, Optional
-from flask import current_app
+from flask import current_app, url_for
 from app.models import Music
 from app.extensions import db
+from sqlalchemy.exc import SQLAlchemyError
 
 
 class MusicManager:
     """音乐管理器（数据库优先，JSON文件作为备份）"""
     
     def __init__(self):
-        self.lock = threading.Lock()
+        self.lock = threading.Lock()    
+    
+    def sync_music_to_db():         # 同步音乐到数据库
+        """
+        扫描 current_app.static_folder + '/music' 下的文件，
+        按 filename 做 upsert：若存在就更新 title/url/cover/enabled，否则插入新记录。
+        返回 (added_count, updated_count, skipped_count)
+        """
+        from app.extensions import db
+        try:
+            from app.models import Music
+        except Exception as e:
+            current_app.logger.error("无法导入 Music 模型: %s", e)
+            raise
+    
+        music_folder = current_app.config.get('MUSIC_FOLDER') or os.path.join(current_app.static_folder, 'music')
+        allowed_extensions = current_app.config.get('ALLOWED_MUSIC_EXTENSIONS', {'mp3'})
+        norm_exts = set([e.lower().lstrip('.') for e in allowed_extensions])
+    
+        added = updated = skipped = 0
+        if not os.path.isdir(music_folder):
+            current_app.logger.warning("MUSIC_FOLDER 不存在：%s", music_folder)
+            return (added, updated, skipped)
+    
+        for fname in sorted(os.listdir(music_folder)):
+            fpath = os.path.join(music_folder, fname)
+            if not os.path.isfile(fpath):
+                continue
+            ext = os.path.splitext(fname)[1].lower().lstrip('.')
+            if ext not in norm_exts:
+                skipped += 1
+                continue
+    
+            # 构造字段
+            rel = os.path.relpath(fpath, current_app.static_folder).replace(os.path.sep, '/')
+            file_url = url_for('static', filename=rel)
+            title = os.path.splitext(fname)[0]
+    
+            # upsert by filename
+            try:
+                existing = db.session.query(Music).filter_by(filename=fname).first()
+                if existing:
+                    changed = False
+                    if getattr(existing, 'title', None) != title:
+                        existing.title = title; changed = True
+                    if getattr(existing, 'url', None) != file_url:
+                        existing.url = file_url; changed = True
+                    if getattr(existing, 'enabled', None) is None:
+                        existing.enabled = True; changed = True
+                    if changed:
+                        db.session.add(existing)
+                        updated += 1
+                    else:
+                        skipped += 1
+                else:
+                    new = Music()
+                    # 安全赋值，避免模型字段差异导致异常
+                    if hasattr(new, 'title'): new.title = title
+                    if hasattr(new, 'filename'): new.filename = fname
+                    if hasattr(new, 'url'): new.url = file_url
+                    if hasattr(new, 'cover'): new.cover = None
+                    if hasattr(new, 'enabled'): new.enabled = True
+                    db.session.add(new)
+                    added += 1
+            except SQLAlchemyError:
+                current_app.logger.exception("DB 操作失败，跳过文件 %s", fname)
+                skipped += 1
+    
+        try:
+            db.session.commit()
+        except Exception:
+            current_app.logger.exception("提交 DB 失败")
+            db.session.rollback()
+        return (added, updated, skipped)
+    
+    
+    # expose as a Flask CLI command
+    def register_cli(app):
+        @app.cli.command("music-sync")
+        def _music_sync():
+            with app.app_context():
+                added, updated, skipped = sync_music_to_db()
+                print(f"同步完成 — 新增: {added}, 更新: {updated}, 跳过: {skipped}")
     
     def get_all_music(self, enabled_only: bool = True) -> List[Music]:
         """获取所有音乐（数据库）"""

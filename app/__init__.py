@@ -11,6 +11,7 @@ from flask import Flask, render_template, jsonify
 from app.config import get_config
 from app.extensions import db, login_manager, csrf, limiter
 from app.models import enable_wal_mode
+from app.music.sync_db import register_cli
 
 
 def create_app(config_name=None):
@@ -49,6 +50,8 @@ def create_app(config_name=None):
     
     # 注册上传文件的静态路由（开发环境）
     register_upload_handler(app)
+
+    register_cli(app)          # 注册音乐同步命令   
     
     # 配置日志
     configure_logging(app)
