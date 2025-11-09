@@ -68,6 +68,17 @@ def music_player():
     return render_template('main/music-player.html')
 
 
+@bp.route('/music/upload-page')
+@login_required
+def music_upload_page():
+    """音乐上传页面（仅管理员）"""
+    if not current_user.is_admin:
+        flash('您没有权限访问此页面', 'danger')
+        return redirect(url_for('main.index'))
+    
+    return render_template('main/music_upload.html')
+
+
 @bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():

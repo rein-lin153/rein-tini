@@ -42,10 +42,15 @@ class Config:
     THUMBS_FOLDER = os.path.join(UPLOAD_FOLDER, 'thumbs')
     BACKGROUNDS_FOLDER = os.path.join(UPLOAD_FOLDER, 'backgrounds')
 
-    # 新增：音乐目录（默认）
+    # ========== 音乐文件配置 ==========
     MUSIC_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'music')
+    COVER_FOLDER = os.path.join(BASE_DIR, 'app', 'static', 'music', 'covers')
+    ALLOWED_MUSIC_EXTENSIONS = {'mp3', 'wav', 'ogg', 'm4a', 'flac'}
+    ALLOWED_COVER_EXTENSIONS = {'jpg', 'jpeg', 'png', 'webp'}
+    MAX_MUSIC_SIZE = int(os.environ.get('MAX_MUSIC_SIZE', 50 * 1024 * 1024))  # 50MB
+    MAX_COVER_SIZE = int(os.environ.get('MAX_COVER_SIZE', 5 * 1024 * 1024))  # 5MB
     
-    # 文件大小限制（5MB）
+    # 文件大小限制（5MB，用于图片上传）
     MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 5 * 1024 * 1024))
     
     # 允许的文件扩展名

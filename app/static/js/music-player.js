@@ -115,6 +115,11 @@ class MusicPlayer {
             if (data.success && data.music_list) {
                 this.playlist = data.music_list;
                 console.log('加载到 ' + this.playlist.length + ' 首歌曲');
+                
+                // 触发播放列表更新事件
+                window.dispatchEvent(new CustomEvent('playlistUpdated', { 
+                    detail: { count: this.playlist.length } 
+                }));
                 if (this.playlist.length > 0) {
                     // 尝试恢复之前的状态
                     const savedState = this.getSavedState();
@@ -363,6 +368,8 @@ class MusicPlayer {
     updateTrackInfo(track) {
         const titleEl = document.getElementById('musicTitle');
         const artistEl = document.getElementById('musicArtist');
+        const coverImg = document.getElementById('musicCover');
+        const coverPlaceholder = document.getElementById('musicCoverPlaceholder');
         
         if (titleEl) {
             titleEl.textContent = track.title || '未知歌曲';
@@ -370,6 +377,18 @@ class MusicPlayer {
         
         if (artistEl) {
             artistEl.textContent = track.artist || '未知艺术家';
+        }
+        
+        // 更新封面
+        if (coverImg && coverPlaceholder) {
+            if (track.cover) {
+                coverImg.src = track.cover;
+                coverImg.style.display = 'block';
+                coverPlaceholder.style.display = 'none';
+            } else {
+                coverImg.style.display = 'none';
+                coverPlaceholder.style.display = 'flex';
+            }
         }
     }
     
@@ -393,10 +412,12 @@ class MusicPlayer {
                 item.classList.add('active');
             }
             
+            const coverHtml = track.cover 
+                ? `<img src="${track.cover}" alt="封面" class="music-player-playlist-item-cover">`
+                : `<div class="music-player-playlist-item-icon"><i class="fas fa-music"></i></div>`;
+            
             item.innerHTML = `
-                <div class="music-player-playlist-item-icon">
-                    <i class="fas fa-music"></i>
-                </div>
+                ${coverHtml}
                 <div class="music-player-playlist-item-info">
                     <div class="music-player-playlist-item-title">${track.title || '未知歌曲'}</div>
                     <div class="music-player-playlist-item-artist">${track.artist || '未知艺术家'}</div>
@@ -431,6 +452,15 @@ class MusicPlayer {
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+    
+    // 刷新播放列表（用于上传新音乐后）
+    async refreshPlaylist() {
+        await this.loadPlaylist();
+        this.renderPlaylist();
+        if (this.playlist.length > 0 && this.currentTrackIndex < this.playlist.length) {
+            this.updateTrackInfo(this.playlist[this.currentTrackIndex]);
+        }
     }
     
     // 保存状态到localStorage
@@ -509,6 +539,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.addEventListener('visibilitychange', function() {
             if (document.hidden && window.musicPlayer) {
                 window.musicPlayer.saveState();
+            }
+        });
+        
+        // 监听来自父窗口的刷新播放列表消息
+        window.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'refreshPlaylist' && window.musicPlayer) {
+                window.musicPlayer.refreshPlaylist();
             }
         });
     }

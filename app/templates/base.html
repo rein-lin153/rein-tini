@@ -90,6 +90,9 @@
                             </a></li>
                             {% if current_user.is_admin %}
                             <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('main.music_upload_page') }}">
+                                <i class="fas fa-music"></i> 上传音乐
+                            </a></li>
                             <li><a class="dropdown-item" href="{{ url_for('admin.users') }}">
                                 <i class="fas fa-users"></i> 用户管理
                             </a></li>

@@ -68,6 +68,7 @@ def ensure_directories(app):
         app.config['THUMBS_FOLDER'],
         app.config['BACKGROUNDS_FOLDER'],
         app.config.get('MUSIC_FOLDER', os.path.join(app.config['BASE_DIR'], 'app', 'static', 'music')),
+        app.config.get('COVER_FOLDER', os.path.join(app.config['BASE_DIR'], 'app', 'static', 'music', 'covers')),
         app.config['BACKUP_DIR'],
         os.path.dirname(app.config['LOG_FILE']),
         os.path.join(app.config['BASE_DIR'], 'instance')
