@@ -9,6 +9,7 @@ class MusicManager {
         this.perPage = 20;
         this.currentQuery = '';
         this.selectedIds = new Set();
+        this.hasShownEmptyMessage = false;
         
         this.init();
     }
@@ -101,13 +102,33 @@ class MusicManager {
             }
             
             const response = await fetch(`/music/api/music?${params.toString()}`);
-            if (!response.ok) {
-                throw new Error('获取音乐列表失败');
+            const data = await response.json();
+            
+            // 检查响应状态
+            if (!response.ok && response.status >= 500) {
+                // 服务器错误（5xx），显示错误信息
+                const errorMsg = data.error || `HTTP ${response.status}: 获取音乐列表失败`;
+                throw new Error(errorMsg);
             }
             
-            const data = await response.json();
-            this.renderMusicList(data.items);
+            // 4xx 错误（如权限问题），如果有数据仍然显示
+            if (!response.ok && (!data.items || data.items.length === 0)) {
+                const errorMsg = data.error || `HTTP ${response.status}: 获取音乐列表失败`;
+                this.showToast(errorMsg, 'error');
+                this.renderMusicList([]);
+                this.renderPagination({ total: 0, page: 1, per_page: 20, pages: 0 });
+                return;
+            }
+            
+            // 正常情况：显示数据（即使为空列表）
+            this.renderMusicList(data.items || []);
             this.renderPagination(data);
+            
+            // 如果没有数据，显示提示（仅在第一次加载时）
+            if (data.total === 0 && this.currentPage === 1 && !this.hasShownEmptyMessage) {
+                this.showToast('暂无音乐文件，请上传音乐', 'info');
+                this.hasShownEmptyMessage = true;
+            }
             
         } catch (error) {
             console.error('加载音乐列表失败:', error);

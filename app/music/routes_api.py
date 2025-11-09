@@ -82,25 +82,13 @@ def list_music():
     }
     """
     try:
-        # 检查数据库表是否存在
-        from sqlalchemy import inspect
-        inspector = inspect(db.engine)
-        if 'music' not in inspector.get_table_names():
-            return jsonify({
-                'error': 'Music table does not exist. Please run: python scripts/create_music_table.py',
-                'total': 0,
-                'page': 1,
-                'per_page': 20,
-                'pages': 0,
-                'items': []
-            }), 503
-        
         page = request.args.get('page', 1, type=int)
         per_page = request.args.get('per_page', 20, type=int)
         query = request.args.get('q', '').strip()
         
         # 限制每页数量
         per_page = min(per_page, 100)
+        page = max(1, page)
         
         # 是否只返回启用的音乐（非管理员默认只返回启用的）
         enabled_only = True
@@ -112,19 +100,99 @@ def list_music():
             # 如果无法访问 current_user，默认只返回启用的
             pass
         
-        manager = get_music_manager()
-        result = manager.search_music(
-            query=query,
-            enabled_only=enabled_only,
-            page=page,
-            per_page=per_page
-        )
+        # 尝试使用数据库（优先）
+        try:
+            from sqlalchemy import inspect
+            inspector = inspect(db.engine)
+            if 'music' in inspector.get_table_names():
+                manager = get_music_manager()
+                result = manager.search_music(
+                    query=query,
+                    enabled_only=enabled_only,
+                    page=page,
+                    per_page=per_page
+                )
+                return jsonify(result)
+        except Exception as db_error:
+            current_app.logger.warning(f'使用数据库失败，回退到JSON索引: {str(db_error)}')
         
-        return jsonify(result)
+        # 回退到 JSON 索引
+        try:
+            from app.music.routes import get_music_index
+            music_index = get_music_index()
+            music_folder = current_app.config['MUSIC_FOLDER']
+            cover_folder = current_app.config['COVER_FOLDER']
+            allowed_extensions = current_app.config.get('ALLOWED_MUSIC_EXTENSIONS', {'mp3'})
+            
+            # 同步文件系统
+            songs = music_index.sync_with_filesystem(
+                music_folder, cover_folder, allowed_extensions
+            )
+            
+            # 过滤启用的音乐
+            if enabled_only:
+                songs = [s for s in songs if s.get('enabled', True)]
+            
+            # 搜索过滤
+            if query:
+                query_lower = query.lower()
+                songs = [s for s in songs 
+                        if query_lower in s.get('title', '').lower() 
+                        or query_lower in s.get('artist', '').lower()]
+            
+            # 分页
+            total = len(songs)
+            pages = (total + per_page - 1) // per_page if total > 0 else 0
+            start = (page - 1) * per_page
+            end = start + per_page
+            items = songs[start:end]
+            
+            # 转换为 API 格式
+            result_items = []
+            for song in items:
+                result_items.append({
+                    'id': song.get('id'),
+                    'title': song.get('title', '未知歌曲'),
+                    'artist': song.get('artist', '未知艺术家'),
+                    'filename': song.get('filename'),
+                    'cover': song.get('cover'),
+                    'url': song.get('url', f"/static/music/{song.get('filename')}"),
+                    'duration': song.get('duration'),
+                    'file_size': song.get('file_size'),
+                    'order': song.get('order', 0),
+                    'enabled': song.get('enabled', True),
+                    'uploaded_at': song.get('created_at') or song.get('uploaded_at'),
+                    'updated_at': song.get('updated_at')
+                })
+            
+            return jsonify({
+                'total': total,
+                'page': page,
+                'per_page': per_page,
+                'pages': pages,
+                'items': result_items
+            })
+        except Exception as json_error:
+            current_app.logger.error(f'使用JSON索引失败: {str(json_error)}', exc_info=True)
+            # 如果 JSON 索引也失败，返回空列表
+            return jsonify({
+                'total': 0,
+                'page': page,
+                'per_page': per_page,
+                'pages': 0,
+                'items': []
+            })
     
     except Exception as e:
         current_app.logger.error(f'获取音乐列表失败: {str(e)}', exc_info=True)
-        return jsonify({'error': str(e)}), 500
+        return jsonify({
+            'error': str(e),
+            'total': 0,
+            'page': 1,
+            'per_page': 20,
+            'pages': 0,
+            'items': []
+        }), 500
 
 
 @bp.route('/api/music/<int:music_id>', methods=['GET'])
