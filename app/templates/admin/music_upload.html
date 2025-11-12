@@ -104,6 +104,171 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/admin_upload.js') }}"></script>
+<script src="{{ url_for('static', filename='js/music-upload-utils.js') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const musicUploadArea = document.getElementById('musicUploadArea');
+        const coverUploadArea = document.getElementById('coverUploadArea');
+        const musicFileInput = document.getElementById('musicFile');
+        const coverFileInput = document.getElementById('coverFile');
+        const musicFileName = document.getElementById('musicFileName');
+        const coverPreview = document.getElementById('coverPreview');
+        const uploadForm = document.getElementById('musicUploadForm');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const uploadResult = document.getElementById('uploadResult');
+        const musicProgressContainer = document.getElementById('musicProgressContainer');
+        const musicProgressBar = document.getElementById('musicProgressBar');
+        const adminToken = document.getElementById('adminToken').value;
+        
+        // 音乐文件选择
+        musicFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                // 验证文件类型
+                if (!file.name.toLowerCase().endsWith('.mp3')) {
+                    showResult('仅支持 MP3 格式', 'danger');
+                    musicFileInput.value = '';
+                    return;
+                }
+                
+                musicFileName.innerHTML = `
+                    <i class="fas fa-check-circle text-success"></i> 
+                    <strong>${file.name}</strong> 
+                    <span class="text-muted">(${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                `;
+            }
+        });
+        
+        // 封面文件选择
+        coverFileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    coverPreview.innerHTML = `
+                        <img src="${e.target.result}" class="cover-preview" alt="封面预览">
+                        <p class="text-muted small mt-2">${file.name}</p>
+                    `;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // 拖拽上传
+        [musicUploadArea, coverUploadArea].forEach(area => {
+            area.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                area.classList.add('dragover');
+            });
+            
+            area.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                area.classList.remove('dragover');
+            });
+            
+            area.addEventListener('drop', function(e) {
+                e.preventDefault();
+                area.classList.remove('dragover');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    if (area === musicUploadArea) {
+                        musicFileInput.files = files;
+                        musicFileInput.dispatchEvent(new Event('change'));
+                    } else {
+                        coverFileInput.files = files;
+                        coverFileInput.dispatchEvent(new Event('change'));
+                    }
+                }
+            });
+        });
+        
+        // 表单提交 - 使用公共上传函数
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            if (!musicFileInput.files[0]) {
+                showResult('请选择音乐文件', 'danger');
+                return;
+            }
+            
+            const titleInput = document.getElementById('songTitle');
+            const artistInput = document.getElementById('songArtist');
+            
+            // 使用公共上传函数
+            uploadMusicFile({
+                musicFile: musicFileInput.files[0],
+                coverFile: coverFileInput.files[0] || null,
+                title: titleInput ? titleInput.value.trim() : '',
+                artist: artistInput ? artistInput.value.trim() : '',
+                token: adminToken,
+                onProgress: function (percent) {
+                    musicProgressBar.style.width = percent + '%';
+                },
+                onStart: function () {
+                    uploadBtn.disabled = true;
+                    uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 上传中...';
+                    musicProgressContainer.style.display = 'block';
+                    musicProgressBar.style.width = '0%';
+                },
+                onFinish: function () {
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerHTML = '<i class="fas fa-upload"></i> 上传音乐';
+                    musicProgressContainer.style.display = 'none';
+                    musicProgressBar.style.width = '0%';
+                },
+                onSuccess: function (data) {
+                    showResult('上传成功！播放列表已更新。', 'success');
+                    uploadForm.reset();
+                    musicFileName.innerHTML = '';
+                    coverPreview.innerHTML = '';
+                    // 通知播放器刷新列表
+                    notifyPlayerRefresh();
+                },
+                onError: function (error) {
+                    showResult('上传失败：' + error, 'danger');
+                }
+            });
+        });
+        
+        function showResult(message, type) {
+            uploadResult.textContent = message;
+            uploadResult.className = 'alert alert-' + type + ' mt-4';
+            uploadResult.style.display = 'block';
+            
+            setTimeout(function() {
+                uploadResult.style.display = 'none';
+            }, 5000);
+        }
+        
+        function notifyPlayerRefresh() {
+            // 通过 localStorage 事件通知播放器刷新
+            try {
+                localStorage.setItem('musicPlaylistRefresh', Date.now().toString());
+                localStorage.removeItem('musicPlaylistRefresh');
+            } catch (e) {
+                console.warn('localStorage 操作失败:', e);
+            }
+            
+            // 通过 postMessage 通知内嵌播放器刷新
+            try {
+                if (window.postMessage) {
+                    window.postMessage({
+                        type: 'refreshPlaylist',
+                        source: 'adminUpload',
+                        timestamp: Date.now()
+                    }, '*');
+                }
+            } catch (e) {
+                console.debug('postMessage 失败:', e);
+            }
+            
+            // 如果内嵌播放器存在，直接刷新
+            if (window.embeddedMusicPlayer) {
+                window.embeddedMusicPlayer.refreshPlaylist();
+            }
+        }
+    });
+</script>
 {% endblock %}
 
