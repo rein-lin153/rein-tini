@@ -36,8 +36,11 @@ function uploadMusicFile(options) {
         onStart = () => {},
         onFinish = () => {},
         timeout = 5 * 60 * 1000, // 5 分钟
-        endpoint = '/music/upload'
+        endpoint = '/music/upload' // 默认端点
     } = options;
+    
+    // 强制使用 /music/upload 端点，防止误用 /music/api/music
+    endpoint = '/music/upload';
 
     // 验证必需参数
     if (!musicFile) {
@@ -179,7 +182,7 @@ function uploadMusicFile(options) {
         onError('上传失败：上传超时');
     });
 
-    // 发送请求
+    // 发送请求（端点已在函数开头强制设置为 /music/upload）
     xhr.open('POST', endpoint, true);
     
     // 如果提供了 token，添加到 Header（优先使用 Header）
