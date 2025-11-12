@@ -12,6 +12,33 @@ from app.music.models import MusicIndex
 from app.music.utils import save_music_file, save_cover_file, validate_upload_token
 
 
+def check_admin_auth():
+    """
+    检查管理员权限（token 或 session）
+    返回: (is_admin: bool, error_message: str | None)
+    """
+    auth_header = request.headers.get('Authorization', '')
+    token = None
+    
+    if auth_header.startswith('Bearer '):
+        token = auth_header[7:]
+    elif current_user.is_authenticated and current_user.is_admin:
+        # 也支持通过 session 验证（管理员登录）
+        return True, None
+    else:
+        # 尝试从请求参数获取 token（用于表单提交）
+        token = request.form.get('token') or request.headers.get('X-Upload-Token')
+    
+    # 如果提供了 token，验证它
+    if token:
+        admin_token = current_app.config.get('ADMIN_UPLOAD_TOKEN')
+        if validate_upload_token(token, admin_token):
+            return True, None
+        return False, '无效的上传令牌'
+    
+    return False, '无权访问，需要管理员权限或有效的上传令牌'
+
+
 def get_music_index() -> MusicIndex:
     """获取音乐索引实例"""
     index_file = os.path.join(
@@ -97,26 +124,10 @@ def upload_music():
     返回: JSON { id, title, artist, filename, cover, url }
     """
     try:
-        # 验证管理员权限（使用 token 或 session）
-        auth_header = request.headers.get('Authorization', '')
-        token = None
-        
-        if auth_header.startswith('Bearer '):
-            token = auth_header[7:]
-        elif current_user.is_authenticated and current_user.is_admin:
-            # 也支持通过 session 验证（管理员登录）
-            pass
-        else:
-            # 尝试从请求参数获取 token（用于表单提交）
-            token = request.form.get('token') or request.headers.get('X-Upload-Token')
-        
-        # 如果提供了 token，验证它
-        if token:
-            admin_token = current_app.config.get('ADMIN_UPLOAD_TOKEN')
-            if not validate_upload_token(token, admin_token):
-                return jsonify({'error': '无效的上传令牌'}), 403
-        elif not (current_user.is_authenticated and current_user.is_admin):
-            return jsonify({'error': '无权访问，需要管理员权限或有效的上传令牌'}), 403
+        # 验证管理员权限（使用公共函数）
+        is_admin, error_msg = check_admin_auth()
+        if not is_admin:
+            return jsonify({'error': error_msg}), 403
         
         # 检查文件
         if 'file' not in request.files:
@@ -137,7 +148,7 @@ def upload_music():
         max_cover_size = current_app.config.get('MAX_COVER_SIZE', 2 * 1024 * 1024)
         
         # 保存音乐文件
-        filename, error = save_music_file(music_file, music_folder, max_music_size)
+        filename, error, file_size = save_music_file(music_file, music_folder, max_music_size)
         if error:
             return jsonify({'error': error}), 400
         
@@ -154,10 +165,21 @@ def upload_music():
         # 如果没有提供标题和艺术家，从文件名提取
         if not title or not artist:
             base_name = os.path.splitext(filename)[0]
-            # 移除 UUID 前缀（如果有）
-            if '_' in base_name and len(base_name.split('_')[0]) == 8:
-                base_name = '_'.join(base_name.split('_')[1:])
+            # 移除文件名前缀（格式：timestamp_uuid_name.ext）
+            # 检查是否有时间戳和UUID前缀（时间戳是数字，UUID是8位十六进制）
+            parts = base_name.split('_')
+            if len(parts) >= 3:
+                # 检查第一部分是否为时间戳（纯数字），第二部分是否为UUID（8位十六进制）
+                try:
+                    int(parts[0])  # 时间戳应该是数字
+                    if len(parts[1]) == 8 and all(c in '0123456789abcdef' for c in parts[1].lower()):
+                        # 移除时间戳和UUID前缀，保留原始文件名部分
+                        base_name = '_'.join(parts[2:])
+                except ValueError:
+                    # 如果不是时间戳格式，保持原样
+                    pass
             
+            # 从文件名中提取艺术家和标题（格式：艺术家 - 标题）
             if ' - ' in base_name:
                 parts = base_name.split(' - ', 1)
                 artist = artist or parts[0].strip()
@@ -166,9 +188,11 @@ def upload_music():
                 title = title or base_name
                 artist = artist or '未知艺术家'
         
-        # 获取文件大小
-        file_path = os.path.join(music_folder, filename)
-        file_size = os.path.getsize(file_path)
+        # 使用 save_music_file 返回的文件大小（避免重复读取文件）
+        if file_size is None:
+            # 如果返回值为 None，则从文件系统获取（兼容性处理）
+            file_path = os.path.join(music_folder, filename)
+            file_size = os.path.getsize(file_path)
         
         # 添加到索引
         music_index = get_music_index()
@@ -243,19 +267,10 @@ def upload_background():
         - file: 背景图文件
     """
     try:
-        # 验证权限
-        auth_header = request.headers.get('Authorization', '')
-        token = None
-        
-        if auth_header.startswith('Bearer '):
-            token = auth_header[7:]
-        
-        if token:
-            admin_token = current_app.config.get('ADMIN_UPLOAD_TOKEN')
-            if not validate_upload_token(token, admin_token):
-                return jsonify({'error': '无效的上传令牌'}), 403
-        elif not (current_user.is_authenticated and current_user.is_admin):
-            return jsonify({'error': '无权访问'}), 403
+        # 验证权限（使用公共函数）
+        is_admin, error_msg = check_admin_auth()
+        if not is_admin:
+            return jsonify({'error': error_msg}), 403
         
         if 'file' not in request.files:
             return jsonify({'error': '未选择文件'}), 400

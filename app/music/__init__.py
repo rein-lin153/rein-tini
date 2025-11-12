@@ -7,5 +7,6 @@ from flask import Blueprint
 
 bp = Blueprint('music', __name__, url_prefix='/music')
 
-from app.music import routes, routes_api
+from app.music import routes
+# 注意：routes_api 已移除，API 路由现在在 routes.py 中
 
