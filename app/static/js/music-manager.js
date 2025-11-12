@@ -252,29 +252,46 @@ class MusicManager {
         const coverFile = document.getElementById('coverFileInput').files[0];
         const title = document.getElementById('titleInput').value.trim();
         const artist = document.getElementById('artistInput').value.trim();
-    
+
         if (!musicFile) {
             this.showToast('请选择音乐文件', 'error');
             return;
         }
-    
+
         // 1️⃣ 准备上传数据
         const formData = new FormData();
         formData.append('file', musicFile);
         if (coverFile) formData.append('cover', coverFile);
         formData.append('title', title);
         formData.append('artist', artist);
-    
+
         try {
             // 2️⃣ 直接调用工具函数
-            const result = await uploadMusicFile(formData);
-    
-            // 3️⃣ 处理结果
-            this.showToast('上传成功！', 'success');
-            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
-            if (modal) modal.hide();
-            this.loadMusicList();
-    
+            await uploadMusicFile({
+                musicFile,
+                coverFile,
+                title,
+                artist,
+                token: this.adminToken,
+                onStart: () => {
+                    document.getElementById('uploadProgress').style.display = 'block';
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="loading-spinner"></span> 上传中...';
+                },
+                onProgress: (p) => { document.getElementById('uploadProgress').querySelector('.progress-bar').style.width = Math.round(p) + '%'; },
+                onSuccess: (data) => {
+                    document.getElementById('uploadProgress').style.display = 'none';
+                    this.showToast('上传成功！', 'success');
+                },
+                onError: (errMsg) => { this.showToast(errMsg, 'error'); }
+            });
+
+            // 处理结果
+            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));// 获取 Modal 实例
+            if (modal) modal.hide();// 关闭 Modal
+            this.loadMusicList(); // 刷新列表
+            this.notifyPlayerRefresh(); // 通知播放器刷新
+
         } catch (err) {
             this.showToast('上传失败: ' + err.message, 'error');
         }
