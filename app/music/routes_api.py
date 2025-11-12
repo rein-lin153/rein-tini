@@ -46,7 +46,6 @@ def check_admin_auth():
 
 
 @bp.route('/api/music', methods=['GET'])
-@bp.route('/api/music/', methods=['GET'])
 def list_music():
     """
     获取音乐列表（分页、搜索）
