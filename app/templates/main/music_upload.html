@@ -227,50 +227,76 @@
 
             const formData = new FormData();
             formData.append('file', musicFileInput.files[0]);
+
+            // 后端通常期待 cover 字段名为 'cover'，不是 'cover_file'
             if (coverFileInput.files[0]) {
-                formData.append('cover_file', coverFileInput.files[0]);
+                formData.append('cover', coverFileInput.files[0]);
             }
 
-            // 显示上传进度
+            // 如果页面有 adminToken 隐藏 input，附带上（可选）
+            const adminTokenEl = document.getElementById('adminToken');
+            if (adminTokenEl && adminTokenEl.value) formData.append('admin_token', adminTokenEl.value);
+
+            // UI 状态
             uploadBtn.disabled = true;
             uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 上传中...';
             musicProgressContainer.style.display = 'block';
             musicProgressBar.style.width = '0%';
 
-            // 使用 XMLHttpRequest 来显示上传进度
+            // XHR 上传（带超时/重置/统一恢复 UI）
             const xhr = new XMLHttpRequest();
-            xhr.withCredentials = true; // ← 新增：确保带 cookie（同源或跨域时需要）
+            xhr.withCredentials = true;
+            xhr.timeout = 5 * 60 * 1000; // 5 分钟
 
-            xhr.upload.addEventListener('progress', function (e) {
-                if (e.lengthComputable) {
-                    const percentComplete = (e.loaded / e.total) * 100;
-                    musicProgressBar.style.width = percentComplete + '%';
+            xhr.upload.addEventListener('progress', function (ev) {
+                if (ev.lengthComputable) {
+                    const pct = (ev.loaded / ev.total) * 100;
+                    musicProgressBar.style.width = pct + '%';
                 }
             });
 
+            function resetUIAfterFinish() {
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '<i class="fas fa-upload"></i> 上传音乐';
+                musicProgressContainer.style.display = 'none';
+                musicProgressBar.style.width = '0%';
+            }
+
             xhr.addEventListener('load', function () {
-                if (xhr.status >= 200 && xhr.status < 300) { // ← 修改：接受所有 2xx
-                    const response = JSON.parse(xhr.responseText || '{}');
-                    if (response.success) {
-                        // ... 成功逻辑保持不变
-                    } else {
-                        showResult('上传失败：' + (response.error || '未知错误'), 'danger');
-                    }
+                // 先恢复 UI
+                resetUIAfterFinish();
+
+                let data = {};
+                try { data = JSON.parse(xhr.responseText || '{}'); } catch (err) {
+                    showResult('上传失败：服务端返回非 JSON 响应', 'danger');
+                    return;
+                }
+
+                if (xhr.status >= 200 && xhr.status < 300 && data && data.success) {
+                    showResult('上传成功', 'success');
+                    // 可选：刷新列表或清空表单
+                    uploadForm.reset();
+                    // 如果页面有函数刷新音乐列表，调用它，例如:
+                    if (typeof refreshMusicList === 'function') refreshMusicList();
                 } else {
-                    let response = {};
-                    try { response = JSON.parse(xhr.responseText || '{}'); } catch (e) { }
-                    showResult('上传失败：' + (response.error || '服务器错误'), 'danger');
+                    // 服务器返回错误信息
+                    const msg = data && (data.message || data.error) ? (data.message || data.error) : ('HTTP ' + xhr.status);
+                    showResult('上传失败：' + msg, 'danger');
                 }
             });
 
             xhr.addEventListener('error', function () {
-                showResult('上传失败：网络错误', 'danger');
-                uploadBtn.disabled = false;
-                uploadBtn.innerHTML = '<i class="fas fa-upload"></i> 上传音乐';
-                musicProgressContainer.style.display = 'none';
+                resetUIAfterFinish();
+                showResult('上传失败：网络错误或连接被重置', 'danger');
             });
 
-            xhr.open('POST', '/music/api/music'); // ← 修改：后端实际路由
+            xhr.addEventListener('timeout', function () {
+                resetUIAfterFinish();
+                showResult('上传失败：上传超时', 'danger');
+            });
+
+            // 打开并发送
+            xhr.open('POST', '/music/upload', true);
             xhr.send(formData);
         });
 
