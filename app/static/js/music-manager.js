@@ -264,47 +264,7 @@ class MusicManager {
         }
 
         // 使用公共上传函数
-        this.uploadMusicFile({
-            musicFile: musicFileInput.files[0],
-            coverFile: coverFileInput.files[0] || null,
-            title: titleInput.value.trim(),
-            artist: artistInput.value.trim(),
-            order: orderInput.value || '0',
-            enabled: enabledInput.value === 'true',
-            token: this.adminToken,
-            endpoint: '/music/upload', // 统一使用 /music/upload 端点
-            onProgress: (percent) => {
-                uploadProgress.querySelector('.progress-bar').style.width = percent + '%';
-            },
-            onStart: () => {
-                uploadProgress.style.display = 'block';
-                submitBtn.disabled = true;
-                submitBtn.innerHTML = '<span class="loading-spinner"></span> 上传中...';
-            },
-            onFinish: () => {
-                uploadProgress.style.display = 'none';
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-upload"></i> 上传';
-            },
-            onSuccess: (data) => {
-                this.showToast('上传成功！', 'success');
-
-                // 关闭 Modal
-                const uploadModal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
-                if (uploadModal) {
-                    uploadModal.hide();
-                }
-
-                // 刷新列表
-                this.loadMusicList(this.currentPage, this.currentQuery);
-
-                // 通知播放器刷新
-                this.notifyPlayerRefresh();
-            },
-            onError: (error) => {
-                this.showToast(error, 'error');
-            }
-        });
+        uploadMusicFile();
     }
 
     async editMusic(musicId) {
