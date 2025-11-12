@@ -51,7 +51,7 @@ def create_app(config_name=None):
     # 注册上传文件的静态路由（开发环境）
     register_upload_handler(app)
 
-    register_cli(app)          # 注册音乐同步命令   
+    MusicManager.register_cli(app)          # 注册音乐同步命令   
     
     # 配置日志
     configure_logging(app)
