@@ -264,7 +264,7 @@ class MusicManager {
         }
 
         // 使用公共上传函数
-        await this.uploadMusicFile({
+        this.uploadMusicFile({
             musicFile: musicFileInput.files[0],
             coverFile: coverFileInput.files[0] || null,
             title: titleInput.value.trim(),
