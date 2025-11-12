@@ -13,79 +13,80 @@
             <h2 class="mb-4">
                 <i class="fas fa-palette text-primary"></i> 主题管理
             </h2>
-            
+
             <!-- 标签页导航 -->
             <ul class="nav nav-tabs mb-4" id="managerTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="music-tab" data-bs-toggle="tab" data-bs-target="#music-panel" type="button" role="tab">
+                    <button class="nav-link active" id="music-tab" data-bs-toggle="tab" data-bs-target="#music-panel"
+                        type="button" role="tab">
                         <i class="fas fa-music"></i> 音乐管理
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="background-tab" data-bs-toggle="tab" data-bs-target="#background-panel" type="button" role="tab">
+                    <button class="nav-link" id="background-tab" data-bs-toggle="tab" data-bs-target="#background-panel"
+                        type="button" role="tab">
                         <i class="fas fa-image"></i> 背景管理
                     </button>
                 </li>
             </ul>
-            
+
             <!-- 标签页内容 -->
             <div class="tab-content" id="managerTabContent">
                 <!-- 音乐管理面板 -->
                 <div class="tab-pane fade show active" id="music-panel" role="tabpanel">
                     <!-- 搜索和操作栏 -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-6">
-                            <div class="input-group">
-                                <span class="input-group-text">
-                                    <i class="fas fa-search"></i>
-                                </span>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="searchInput" 
-                                       placeholder="搜索歌曲标题或艺术家...">
-                                <button class="btn btn-primary" id="searchBtn">
-                                    <i class="fas fa-search"></i> 搜索
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-md-6 text-end">
-                            <button class="btn btn-success" id="uploadBtn" data-bs-toggle="modal" data-bs-target="#uploadModal">
-                                <i class="fas fa-upload"></i> 上传音乐
-                            </button>
-                            <button class="btn btn-danger" id="batchDeleteBtn" style="display: none;">
-                                <i class="fas fa-trash"></i> 批量删除
-                            </button>
-                            <button class="btn btn-info" id="exportBtn">
-                                <i class="fas fa-download"></i> 导出 CSV
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 音乐列表 -->
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <div id="musicListContainer">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">加载中...</span>
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-search"></i>
+                                        </span>
+                                        <input type="text" class="form-control" id="searchInput"
+                                            placeholder="搜索歌曲标题或艺术家...">
+                                        <button class="btn btn-primary" id="searchBtn">
+                                            <i class="fas fa-search"></i> 搜索
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <button class="btn btn-success" id="uploadBtn" data-bs-toggle="modal"
+                                        data-bs-target="#uploadModal">
+                                        <i class="fas fa-upload"></i> 上传音乐
+                                    </button>
+                                    <button class="btn btn-danger" id="batchDeleteBtn" style="display: none;">
+                                        <i class="fas fa-trash"></i> 批量删除
+                                    </button>
+                                    <button class="btn btn-info" id="exportBtn">
+                                        <i class="fas fa-download"></i> 导出 CSV
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    
-                    <!-- 分页 -->
-                    <nav aria-label="音乐列表分页">
-                        <ul class="pagination justify-content-center mt-4" id="pagination">
-                            <!-- 分页控件将通过 JavaScript 动态生成 -->
-                        </ul>
-                    </nav>
+
+                    <!-- 音乐列表 -->
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div id="musicListContainer">
+                                <div class="text-center py-5">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">加载中...</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 分页 -->
+                            <nav aria-label="音乐列表分页">
+                                <ul class="pagination justify-content-center mt-4" id="pagination">
+                                    <!-- 分页控件将通过 JavaScript 动态生成 -->
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
                 </div>
-            </div>
-                </div>
-                
+
                 <!-- 背景管理面板 -->
                 <div class="tab-pane fade" id="background-panel" role="tabpanel">
                     <div class="background-manager-container">
@@ -96,13 +97,14 @@
                                     <h5 class="mb-0">
                                         <i class="fas fa-image text-pink"></i> 背景图片管理
                                     </h5>
-                                    <button class="btn btn-pink-gradient" id="uploadBackgroundBtn" data-bs-toggle="modal" data-bs-target="#uploadBackgroundModal">
+                                    <button class="btn btn-pink-gradient" id="uploadBackgroundBtn"
+                                        data-bs-toggle="modal" data-bs-target="#uploadBackgroundModal">
                                         <i class="fas fa-upload"></i> 上传背景
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- 当前默认背景预览 -->
                         <div class="card shadow-sm mb-4 background-preview-card">
                             <div class="card-body">
@@ -118,7 +120,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- 背景列表 -->
                         <div class="card shadow-sm background-list-card">
                             <div class="card-body">
@@ -155,62 +157,44 @@
                 <form id="uploadForm" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label class="form-label">音乐文件 <span class="text-danger">*</span></label>
-                        <input type="file" 
-                               class="form-control" 
-                               id="musicFileInput" 
-                               name="file" 
-                               accept=".mp3" 
-                               required>
+                        <input type="file" class="form-control" id="musicFileInput" name="file" accept=".mp3" required>
                         <div class="form-text">支持 MP3 格式，最大 30MB</div>
                         <div class="progress mt-2" id="uploadProgress" style="display: none;">
                             <div class="progress-bar" role="progressbar" style="width: 0%"></div>
                         </div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label class="form-label">封面图片 <span class="text-muted">(可选)</span></label>
-                        <input type="file" 
-                               class="form-control" 
-                               id="coverFileInput" 
-                               name="cover" 
-                               accept=".jpg,.jpeg,.png,.webp">
+                        <input type="file" class="form-control" id="coverFileInput" name="cover"
+                            accept=".jpg,.jpeg,.png,.webp">
                         <div class="form-text">支持 JPG, PNG, WEBP 格式，最大 2MB</div>
                         <div id="coverPreview" class="mt-2"></div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">歌曲标题</label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="titleInput" 
-                                       name="title" 
-                                       placeholder="如果不填，将从文件名提取">
+                                <input type="text" class="form-control" id="titleInput" name="title"
+                                    placeholder="如果不填，将从文件名提取">
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">艺术家</label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="artistInput" 
-                                       name="artist" 
-                                       placeholder="如果不填，将从文件名提取">
+                                <input type="text" class="form-control" id="artistInput" name="artist"
+                                    placeholder="如果不填，将从文件名提取">
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">排序顺序</label>
-                                <input type="number" 
-                                       class="form-control" 
-                                       id="orderInput" 
-                                       name="order" 
-                                       value="0" 
-                                       min="0">
+                                <input type="number" class="form-control" id="orderInput" name="order" value="0"
+                                    min="0">
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -249,50 +233,35 @@
             <div class="modal-body">
                 <form id="editForm">
                     <input type="hidden" id="editMusicId">
-                    
+
                     <div class="mb-3">
                         <label class="form-label">封面图片</label>
-                        <input type="file" 
-                               class="form-control" 
-                               id="editCoverInput" 
-                               name="cover" 
-                               accept=".jpg,.jpeg,.png,.webp">
+                        <input type="file" class="form-control" id="editCoverInput" name="cover"
+                            accept=".jpg,.jpeg,.png,.webp">
                         <div class="form-text">留空则不更改封面</div>
                         <div id="editCoverPreview" class="mt-2"></div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">歌曲标题 <span class="text-danger">*</span></label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="editTitleInput" 
-                                       name="title" 
-                                       required>
+                                <input type="text" class="form-control" id="editTitleInput" name="title" required>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">艺术家 <span class="text-danger">*</span></label>
-                                <input type="text" 
-                                       class="form-control" 
-                                       id="editArtistInput" 
-                                       name="artist" 
-                                       required>
+                                <input type="text" class="form-control" id="editArtistInput" name="artist" required>
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">排序顺序</label>
-                                <input type="number" 
-                                       class="form-control" 
-                                       id="editOrderInput" 
-                                       name="order" 
-                                       min="0">
+                                <input type="number" class="form-control" id="editOrderInput" name="order" min="0">
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -331,18 +300,14 @@
                 <form id="uploadBackgroundForm" enctype="multipart/form-data">
                     <div class="mb-3">
                         <label class="form-label">背景图片 <span class="text-danger">*</span></label>
-                        <input type="file" 
-                               class="form-control" 
-                               id="backgroundFileInput" 
-                               name="file" 
-                               accept=".jpg,.jpeg,.png" 
-                               required>
+                        <input type="file" class="form-control" id="backgroundFileInput" name="file"
+                            accept=".jpg,.jpeg,.png" required>
                         <div class="form-text">支持 JPG、PNG 格式，最大 5MB</div>
                         <div class="progress mt-2" id="backgroundUploadProgress" style="display: none;">
                             <div class="progress-bar bg-pink-gradient" role="progressbar" style="width: 0%"></div>
                         </div>
                     </div>
-                    
+
                     <div id="backgroundPreview" class="mt-3"></div>
                 </form>
             </div>
@@ -360,14 +325,16 @@
 <input type="hidden" id="adminToken" value="{{ admin_token }}">
 <script type="text/javascript">
     // 注入配置到全局（在脚本加载前执行）
-    (function() {
+    (function () {
         if (typeof window.APP_CONFIG === 'undefined') {
             window.APP_CONFIG = {};
         }
-        window.APP_CONFIG.MAX_MUSIC_SIZE = {{ max_music_size | default(31457280) }}; // 30MB 默认值
-        window.APP_CONFIG.MAX_CONTENT_LENGTH = {{ max_content_length | default(31457280) }}; // 30MB 默认值
-        window.APP_CONFIG.MAX_COVER_SIZE = {{ max_cover_size | default(2097152) }}; // 2MB 默认值
-        window.APP_CONFIG.MAX_BACKGROUND_SIZE = {{ max_content_length | default(5242880) }}; // 5MB 默认值（背景图片）
+        window.APP_CONFIG = {
+            MAX_MUSIC_SIZE: 31457280,
+            MAX_CONTENT_LENGTH: 31457280,
+            MAX_COVER_SIZE: 2097152,
+            MAX_BACKGROUND_SIZE: 5242880
+        };
     })();
 </script>
 {% endblock %}
@@ -377,4 +344,3 @@
 <script src="{{ url_for('static', filename='js/music-manager.js') }}"></script>
 <script src="{{ url_for('static', filename='js/background-manager.js') }}"></script>
 {% endblock %}
-
