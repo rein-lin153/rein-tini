@@ -11,7 +11,7 @@ from flask import Flask, render_template, jsonify
 from app.config import get_config
 from app.extensions import db, login_manager, csrf, limiter
 from app.models import enable_wal_mode
-from app.music.models_db import register_cli
+from app.music.models_db import MusicManager
 
 
 def create_app(config_name=None):
