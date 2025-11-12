@@ -263,145 +263,48 @@ class MusicManager {
             return;
         }
         
-        // 获取配置的最大文件大小
-        const maxMusicSize = window.APP_CONFIG?.MAX_MUSIC_SIZE || window.APP_CONFIG?.MAX_CONTENT_LENGTH || (30 * 1024 * 1024); // 默认 30MB
-        const musicFile = musicFileInput.files[0];
-        const musicFileSize = musicFile.size;
-        
-        // 客户端文件大小检查
-        if (musicFileSize > maxMusicSize) {
-            const maxSizeMB = (maxMusicSize / (1024 * 1024)).toFixed(2);
-            const fileSizeMB = (musicFileSize / (1024 * 1024)).toFixed(2);
-            this.showToast(`文件大小 (${fileSizeMB}MB) 超过限制 (${maxSizeMB}MB)，请压缩或更换文件`, 'error');
-            return;
-        }
-        
-        // 检查封面文件大小（如果提供了封面）
-        if (coverFileInput.files[0]) {
-            const maxCoverSize = window.APP_CONFIG?.MAX_COVER_SIZE || (2 * 1024 * 1024); // 默认 2MB
-            const coverFile = coverFileInput.files[0];
-            const coverFileSize = coverFile.size;
-            
-            if (coverFileSize > maxCoverSize) {
-                const maxCoverSizeMB = (maxCoverSize / (1024 * 1024)).toFixed(2);
-                const coverFileSizeMB = (coverFileSize / (1024 * 1024)).toFixed(2);
-                this.showToast(`封面文件大小 (${coverFileSizeMB}MB) 超过限制 (${maxCoverSizeMB}MB)，请压缩或更换文件`, 'error');
-                return;
-            }
-        }
-        
-        const formData = new FormData();
-        formData.append('file', musicFile);
-        
-        if (coverFileInput.files[0]) {
-            formData.append('cover', coverFileInput.files[0]);
-        }
-        
-        if (titleInput.value.trim()) {
-            formData.append('title', titleInput.value.trim());
-        }
-        
-        if (artistInput.value.trim()) {
-            formData.append('artist', artistInput.value.trim());
-        }
-        
-        formData.append('order', orderInput.value || '0');
-        formData.append('enabled', enabledInput.value);
-        
-        // 显示进度条
-        uploadProgress.style.display = 'block';
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="loading-spinner"></span> 上传中...';
-        
-        try {
-            const xhr = new XMLHttpRequest();
-            
-            xhr.upload.addEventListener('progress', (e) => {
-                if (e.lengthComputable) {
-                    const percent = (e.loaded / e.total) * 100;
-                    uploadProgress.querySelector('.progress-bar').style.width = percent + '%';
-                }
-            });
-            
-            xhr.addEventListener('load', () => {
+        // 使用公共上传函数
+        uploadMusicFile({
+            musicFile: musicFileInput.files[0],
+            coverFile: coverFileInput.files[0] || null,
+            title: titleInput.value.trim(),
+            artist: artistInput.value.trim(),
+            order: orderInput.value || '0',
+            enabled: enabledInput.value === 'true',
+            token: this.adminToken,
+            endpoint: '/music/upload', // 统一使用 /music/upload 端点
+            onProgress: (percent) => {
+                uploadProgress.querySelector('.progress-bar').style.width = percent + '%';
+            },
+            onStart: () => {
+                uploadProgress.style.display = 'block';
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="loading-spinner"></span> 上传中...';
+            },
+            onFinish: () => {
                 uploadProgress.style.display = 'none';
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-upload"></i> 上传';
+            },
+            onSuccess: (data) => {
+                this.showToast('上传成功！', 'success');
                 
-                if (xhr.status === 201) {
-                    try {
-                        const music = JSON.parse(xhr.responseText);
-                        this.showToast('上传成功！', 'success');
-                        
-                        // 关闭 Modal
-                        const uploadModal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
-                        uploadModal.hide();
-                        
-                        // 刷新列表
-                        this.loadMusicList(this.currentPage, this.currentQuery);
-                        
-                        // 通知播放器刷新
-                        this.notifyPlayerRefresh();
-                    } catch (e) {
-                        console.error('解析响应失败:', e);
-                        this.showToast('上传成功，但解析响应失败', 'warning');
-                    }
-                } else {
-                    // 尝试解析错误响应
-                    let errorMsg = '上传失败';
-                    try {
-                        // 检查响应类型
-                        const contentType = xhr.getResponseHeader('Content-Type') || '';
-                        if (contentType.includes('application/json')) {
-                            const error = JSON.parse(xhr.responseText);
-                            errorMsg = error.error || error.message || errorMsg;
-                            
-                            // 特殊处理 413 错误
-                            if (xhr.status === 413) {
-                                const maxSizeMB = (maxMusicSize / (1024 * 1024)).toFixed(2);
-                                errorMsg = `文件过大：文件大小超过服务器限制 (${maxSizeMB}MB)。${error.max_bytes ? `最大允许: ${(error.max_bytes / (1024 * 1024)).toFixed(2)}MB` : ''}`;
-                            }
-                        } else if (xhr.responseText.includes('<!DOCTYPE')) {
-                            // HTML 错误页面
-                            if (xhr.status === 413) {
-                                const maxSizeMB = (maxMusicSize / (1024 * 1024)).toFixed(2);
-                                errorMsg = `文件过大：文件大小超过服务器限制 (${maxSizeMB}MB)。请检查 Nginx 或其他代理服务器的 client_max_body_size 配置。`;
-                            } else {
-                                errorMsg = `上传失败: HTTP ${xhr.status} (服务器返回了错误页面)`;
-                            }
-                        } else {
-                            errorMsg = `上传失败: HTTP ${xhr.status}`;
-                        }
-                    } catch (e) {
-                        console.error('解析错误响应失败:', e);
-                        if (xhr.status === 413) {
-                            const maxSizeMB = (maxMusicSize / (1024 * 1024)).toFixed(2);
-                            errorMsg = `文件过大：文件大小超过服务器限制 (${maxSizeMB}MB)`;
-                        } else {
-                            errorMsg = `上传失败: HTTP ${xhr.status}`;
-                        }
-                    }
-                    this.showToast(errorMsg, 'error');
+                // 关闭 Modal
+                const uploadModal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+                if (uploadModal) {
+                    uploadModal.hide();
                 }
-            });
-            
-            xhr.addEventListener('error', () => {
-                this.showToast('上传失败: 网络错误', 'error');
-                uploadProgress.style.display = 'none';
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fas fa-upload"></i> 上传';
-            });
-            
-            xhr.open('POST', '/music/api/music');
-            xhr.setRequestHeader('Authorization', 'Bearer ' + this.adminToken);
-            xhr.send(formData);
-            
-        } catch (error) {
-            this.showToast('上传失败: ' + error.message, 'error');
-            uploadProgress.style.display = 'none';
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = '<i class="fas fa-upload"></i> 上传';
-        }
+                
+                // 刷新列表
+                this.loadMusicList(this.currentPage, this.currentQuery);
+                
+                // 通知播放器刷新
+                this.notifyPlayerRefresh();
+            },
+            onError: (error) => {
+                this.showToast(error, 'error');
+            }
+        });
     }
     
     async editMusic(musicId) {
