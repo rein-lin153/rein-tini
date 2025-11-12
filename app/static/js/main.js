@@ -1,5 +1,23 @@
 // 心语时光 - 主 JavaScript 文件
 
+/**
+ * 初始化元素当元素准备好时
+ * @param {string} selector - 选择器
+ * @param {function} initFn - 初始化函数
+ * @param {number} timeoutMs - 超时时间
+ * @returns {void}
+ */
+function initWhenReady(selector, initFn, timeoutMs = 5000) {
+    const el = document.querySelector(selector);
+    if (el) return initFn(el);
+    const obs = new MutationObserver((m, o) => {
+      const e = document.querySelector(selector);
+      if (e) { o.disconnect(); initFn(e); }
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+    setTimeout(() => { obs.disconnect(); initFn(null); }, timeoutMs);
+  }
+
 // 全局错误处理（捕获未处理的 Promise 拒绝和错误）
 window.addEventListener('error', function(event) {
     // 忽略来自浏览器扩展的错误（如 content.js）
