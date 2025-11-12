@@ -248,23 +248,36 @@ class MusicManager {
     }
 
     async uploadMusic() {
-        const form = document.getElementById('uploadForm');
-        const musicFileInput = document.getElementById('musicFileInput');
-        const coverFileInput = document.getElementById('coverFileInput');
-        const titleInput = document.getElementById('titleInput');
-        const artistInput = document.getElementById('artistInput');
-        const orderInput = document.getElementById('orderInput');
-        const enabledInput = document.getElementById('enabledInput');
-        const uploadProgress = document.getElementById('uploadProgress');
-        const submitBtn = document.getElementById('submitUploadBtn');
-
-        if (!musicFileInput.files[0]) {
+        const musicFile = document.getElementById('musicFileInput').files[0];
+        const coverFile = document.getElementById('coverFileInput').files[0];
+        const title = document.getElementById('titleInput').value.trim();
+        const artist = document.getElementById('artistInput').value.trim();
+    
+        if (!musicFile) {
             this.showToast('请选择音乐文件', 'error');
             return;
         }
-
-        // 使用公共上传函数
-        uploadMusicFile();
+    
+        // 1️⃣ 准备上传数据
+        const formData = new FormData();
+        formData.append('file', musicFile);
+        if (coverFile) formData.append('cover', coverFile);
+        formData.append('title', title);
+        formData.append('artist', artist);
+    
+        try {
+            // 2️⃣ 直接调用工具函数
+            const result = await uploadMusicFile(formData);
+    
+            // 3️⃣ 处理结果
+            this.showToast('上传成功！', 'success');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
+            if (modal) modal.hide();
+            this.loadMusicList();
+    
+        } catch (err) {
+            this.showToast('上传失败: ' + err.message, 'error');
+        }
     }
 
     async editMusic(musicId) {

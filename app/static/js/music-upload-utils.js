@@ -39,15 +39,6 @@ function uploadMusicFile(options) {
         endpoint = '/music/upload' // 默认端点
     } = options;
     
-    // 强制使用 /music/upload 端点，防止误用 /music/api/music
-    endpoint = '/music/upload';
-
-    // 验证必需参数
-    if (!musicFile) {
-        onError('请选择音乐文件');
-        return;
-    }
-
     // 客户端文件大小检查
     const maxMusicSize = window.APP_CONFIG?.MAX_MUSIC_SIZE || window.APP_CONFIG?.MAX_CONTENT_LENGTH || (30 * 1024 * 1024); // 默认 30MB
     if (musicFile.size > maxMusicSize) {
