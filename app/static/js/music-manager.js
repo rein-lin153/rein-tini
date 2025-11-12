@@ -10,68 +10,68 @@ class MusicManager {
         this.currentQuery = '';
         this.selectedIds = new Set();
         this.hasShownEmptyMessage = false;
-        
+
         this.init();
     }
-    
+
     init() {
         // 绑定事件
         this.bindEvents();
-        
+
         // 加载音乐列表
         this.loadMusicList();
     }
-    
+
     bindEvents() {
         // 搜索
         const searchInput = document.getElementById('searchInput');
         const searchBtn = document.getElementById('searchBtn');
-        
+
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 this.search();
             }
         });
-        
+
         searchBtn.addEventListener('click', () => {
             this.search();
         });
-        
+
         // 上传
         const submitUploadBtn = document.getElementById('submitUploadBtn');
         submitUploadBtn.addEventListener('click', () => {
             this.uploadMusic();
         });
-        
+
         // 封面预览
         const coverFileInput = document.getElementById('coverFileInput');
         coverFileInput.addEventListener('change', (e) => {
             this.previewCover(e.target.files[0], 'coverPreview');
         });
-        
+
         const editCoverInput = document.getElementById('editCoverInput');
         editCoverInput.addEventListener('change', (e) => {
             this.previewCover(e.target.files[0], 'editCoverPreview');
         });
-        
+
         // 编辑
         const submitEditBtn = document.getElementById('submitEditBtn');
         submitEditBtn.addEventListener('click', () => {
             this.updateMusic();
         });
-        
+
         // 批量删除
         const batchDeleteBtn = document.getElementById('batchDeleteBtn');
         batchDeleteBtn.addEventListener('click', () => {
             this.batchDelete();
         });
-        
+
         // 导出 CSV
         const exportBtn = document.getElementById('exportBtn');
         exportBtn.addEventListener('click', () => {
             this.exportCSV();
         });
-        
+
         // Modal 关闭时重置表单
         const uploadModal = document.getElementById('uploadModal');
         uploadModal.addEventListener('hidden.bs.modal', () => {
@@ -79,38 +79,38 @@ class MusicManager {
             document.getElementById('coverPreview').innerHTML = '';
             document.getElementById('uploadProgress').style.display = 'none';
         });
-        
+
         const editModal = document.getElementById('editModal');
         editModal.addEventListener('hidden.bs.modal', () => {
             document.getElementById('editForm').reset();
             document.getElementById('editCoverPreview').innerHTML = '';
         });
     }
-    
+
     async loadMusicList(page = 1, query = '') {
         try {
             this.currentPage = page;
             this.currentQuery = query;
-            
+
             const params = new URLSearchParams({
                 page: page,
                 per_page: this.perPage
             });
-            
+
             if (query) {
                 params.append('q', query);
             }
-            
+
             const response = await fetch(`/music/api/music?${params.toString()}`);
             const data = await response.json();
-            
+
             // 检查响应状态
             if (!response.ok && response.status >= 500) {
                 // 服务器错误（5xx），显示错误信息
                 const errorMsg = data.error || `HTTP ${response.status}: 获取音乐列表失败`;
                 throw new Error(errorMsg);
             }
-            
+
             // 4xx 错误（如权限问题），如果有数据仍然显示
             if (!response.ok && (!data.items || data.items.length === 0)) {
                 const errorMsg = data.error || `HTTP ${response.status}: 获取音乐列表失败`;
@@ -119,26 +119,26 @@ class MusicManager {
                 this.renderPagination({ total: 0, page: 1, per_page: 20, pages: 0 });
                 return;
             }
-            
+
             // 正常情况：显示数据（即使为空列表）
             this.renderMusicList(data.items || []);
             this.renderPagination(data);
-            
+
             // 如果没有数据，显示提示（仅在第一次加载时）
             if (data.total === 0 && this.currentPage === 1 && !this.hasShownEmptyMessage) {
                 this.showToast('暂无音乐文件，请上传音乐', 'info');
                 this.hasShownEmptyMessage = true;
             }
-            
+
         } catch (error) {
             console.error('加载音乐列表失败:', error);
             this.showToast('加载音乐列表失败: ' + error.message, 'error');
         }
     }
-    
+
     renderMusicList(items) {
         const container = document.getElementById('musicListContainer');
-        
+
         if (items.length === 0) {
             container.innerHTML = `
                 <div class="empty-state">
@@ -149,7 +149,7 @@ class MusicManager {
             `;
             return;
         }
-        
+
         container.innerHTML = items.map(music => `
             <div class="music-manager-card" data-music-id="${music.id}">
                 <div class="d-flex align-items-center gap-3">
@@ -160,10 +160,10 @@ class MusicManager {
                                onchange="musicManager.toggleSelect(${music.id})">
                     </div>
                     <div class="music-cover-thumb">
-                        ${music.cover 
-                            ? `<img src="${music.cover}" alt="封面" class="music-cover-thumb">`
-                            : `<i class="fas fa-music"></i>`
-                        }
+                        ${music.cover
+                ? `<img src="${music.cover}" alt="封面" class="music-cover-thumb">`
+                : `<i class="fas fa-music"></i>`
+            }
                     </div>
                     <div class="music-info flex-grow-1">
                         <div class="music-title">${this.escapeHtml(music.title)}</div>
@@ -195,17 +195,17 @@ class MusicManager {
             </div>
         `).join('');
     }
-    
+
     renderPagination(data) {
         const pagination = document.getElementById('pagination');
-        
+
         if (data.pages <= 1) {
             pagination.innerHTML = '';
             return;
         }
-        
+
         let html = '';
-        
+
         // 上一页
         html += `
             <li class="page-item ${data.page === 1 ? 'disabled' : ''}">
@@ -214,7 +214,7 @@ class MusicManager {
                 </a>
             </li>
         `;
-        
+
         // 页码
         for (let i = 1; i <= data.pages; i++) {
             if (i === 1 || i === data.pages || (i >= data.page - 2 && i <= data.page + 2)) {
@@ -229,7 +229,7 @@ class MusicManager {
                 html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
             }
         }
-        
+
         // 下一页
         html += `
             <li class="page-item ${data.page === data.pages ? 'disabled' : ''}">
@@ -238,15 +238,15 @@ class MusicManager {
                 </a>
             </li>
         `;
-        
+
         pagination.innerHTML = html;
     }
-    
+
     search() {
         const query = document.getElementById('searchInput').value.trim();
         this.loadMusicList(1, query);
     }
-    
+
     async uploadMusic() {
         const form = document.getElementById('uploadForm');
         const musicFileInput = document.getElementById('musicFileInput');
@@ -257,14 +257,14 @@ class MusicManager {
         const enabledInput = document.getElementById('enabledInput');
         const uploadProgress = document.getElementById('uploadProgress');
         const submitBtn = document.getElementById('submitUploadBtn');
-        
+
         if (!musicFileInput.files[0]) {
             this.showToast('请选择音乐文件', 'error');
             return;
         }
-        
+
         // 使用公共上传函数
-        uploadMusicFile({
+        await this.uploadMusicFile({
             musicFile: musicFileInput.files[0],
             coverFile: coverFileInput.files[0] || null,
             title: titleInput.value.trim(),
@@ -288,16 +288,16 @@ class MusicManager {
             },
             onSuccess: (data) => {
                 this.showToast('上传成功！', 'success');
-                
+
                 // 关闭 Modal
                 const uploadModal = bootstrap.Modal.getInstance(document.getElementById('uploadModal'));
                 if (uploadModal) {
                     uploadModal.hide();
                 }
-                
+
                 // 刷新列表
                 this.loadMusicList(this.currentPage, this.currentQuery);
-                
+
                 // 通知播放器刷新
                 this.notifyPlayerRefresh();
             },
@@ -306,7 +306,7 @@ class MusicManager {
             }
         });
     }
-    
+
     async editMusic(musicId) {
         try {
             const response = await fetch(`/music/api/music/${musicId}`, {
@@ -314,20 +314,20 @@ class MusicManager {
                     'Authorization': 'Bearer ' + this.adminToken
                 }
             });
-            
+
             if (!response.ok) {
                 throw new Error('获取音乐信息失败');
             }
-            
+
             const music = await response.json();
-            
+
             // 填充表单
             document.getElementById('editMusicId').value = music.id;
             document.getElementById('editTitleInput').value = music.title;
             document.getElementById('editArtistInput').value = music.artist;
             document.getElementById('editOrderInput').value = music.order;
             document.getElementById('editEnabledInput').value = music.enabled ? 'true' : 'false';
-            
+
             // 显示封面
             const coverPreview = document.getElementById('editCoverPreview');
             if (music.cover) {
@@ -335,16 +335,16 @@ class MusicManager {
             } else {
                 coverPreview.innerHTML = '';
             }
-            
+
             // 显示 Modal
             const editModal = new bootstrap.Modal(document.getElementById('editModal'));
             editModal.show();
-            
+
         } catch (error) {
             this.showToast('获取音乐信息失败: ' + error.message, 'error');
         }
     }
-    
+
     async updateMusic() {
         const musicId = document.getElementById('editMusicId').value;
         const titleInput = document.getElementById('editTitleInput');
@@ -353,72 +353,72 @@ class MusicManager {
         const enabledInput = document.getElementById('editEnabledInput');
         const coverFileInput = document.getElementById('editCoverInput');
         const submitBtn = document.getElementById('submitEditBtn');
-        
+
         if (!titleInput.value.trim() || !artistInput.value.trim()) {
             this.showToast('请填写标题和艺术家', 'error');
             return;
         }
-        
+
         const formData = new FormData();
         formData.append('title', titleInput.value.trim());
         formData.append('artist', artistInput.value.trim());
         formData.append('order', orderInput.value || '0');
         formData.append('enabled', enabledInput.value);
-        
+
         if (coverFileInput.files[0]) {
             formData.append('cover', coverFileInput.files[0]);
         }
-        
+
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<span class="loading-spinner"></span> 保存中...';
-        
+
         try {
             const xhr = new XMLHttpRequest();
-            
+
             xhr.addEventListener('load', () => {
                 if (xhr.status === 200) {
                     this.showToast('更新成功！', 'success');
-                    
+
                     // 关闭 Modal
                     const editModal = bootstrap.Modal.getInstance(document.getElementById('editModal'));
                     editModal.hide();
-                    
+
                     // 刷新列表
                     this.loadMusicList(this.currentPage, this.currentQuery);
-                    
+
                     // 通知播放器刷新
                     this.notifyPlayerRefresh();
                 } else {
                     const error = JSON.parse(xhr.responseText);
                     this.showToast('更新失败: ' + (error.error || '未知错误'), 'error');
                 }
-                
+
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-save"></i> 保存';
             });
-            
+
             xhr.addEventListener('error', () => {
                 this.showToast('更新失败: 网络错误', 'error');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<i class="fas fa-save"></i> 保存';
             });
-            
+
             xhr.open('PUT', `/music/api/music/${musicId}`);
             xhr.setRequestHeader('Authorization', 'Bearer ' + this.adminToken);
             xhr.send(formData);
-            
+
         } catch (error) {
             this.showToast('更新失败: ' + error.message, 'error');
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-save"></i> 保存';
         }
     }
-    
+
     async deleteMusic(musicId) {
         if (!confirm('确定要删除这首音乐吗？此操作不可恢复。')) {
             return;
         }
-        
+
         try {
             const response = await fetch(`/music/api/music/${musicId}`, {
                 method: 'DELETE',
@@ -426,35 +426,35 @@ class MusicManager {
                     'Authorization': 'Bearer ' + this.adminToken
                 }
             });
-            
+
             if (!response.ok) {
                 const error = await response.json();
                 throw new Error(error.error || '删除失败');
             }
-            
+
             this.showToast('删除成功！', 'success');
-            
+
             // 刷新列表
             this.loadMusicList(this.currentPage, this.currentQuery);
-            
+
             // 通知播放器刷新
             this.notifyPlayerRefresh();
-            
+
         } catch (error) {
             this.showToast('删除失败: ' + error.message, 'error');
         }
     }
-    
+
     async batchDelete() {
         if (this.selectedIds.size === 0) {
             this.showToast('请选择要删除的音乐', 'warning');
             return;
         }
-        
+
         if (!confirm(`确定要删除选中的 ${this.selectedIds.size} 首音乐吗？此操作不可恢复。`)) {
             return;
         }
-        
+
         try {
             const response = await fetch('/music/api/music/batch-delete', {
                 method: 'POST',
@@ -466,34 +466,34 @@ class MusicManager {
                     ids: Array.from(this.selectedIds)
                 })
             });
-            
+
             if (!response.ok) {
                 const error = await response.json();
                 throw new Error(error.error || '批量删除失败');
             }
-            
+
             const result = await response.json();
             this.showToast(`成功删除 ${result.total_deleted} 首音乐`, 'success');
-            
+
             // 清空选择
             this.selectedIds.clear();
             this.updateBatchDeleteButton();
-            
+
             // 刷新列表
             this.loadMusicList(this.currentPage, this.currentQuery);
-            
+
             // 通知播放器刷新
             this.notifyPlayerRefresh();
-            
+
         } catch (error) {
             this.showToast('批量删除失败: ' + error.message, 'error');
         }
     }
-    
+
     toggleSelect(musicId) {
         const checkbox = document.querySelector(`input[type="checkbox"][value="${musicId}"]`);
         const card = checkbox.closest('.music-manager-card');
-        
+
         if (checkbox.checked) {
             this.selectedIds.add(musicId);
             card.classList.add('selected');
@@ -501,10 +501,10 @@ class MusicManager {
             this.selectedIds.delete(musicId);
             card.classList.remove('selected');
         }
-        
+
         this.updateBatchDeleteButton();
     }
-    
+
     updateBatchDeleteButton() {
         const batchDeleteBtn = document.getElementById('batchDeleteBtn');
         if (this.selectedIds.size > 0) {
@@ -514,7 +514,7 @@ class MusicManager {
             batchDeleteBtn.style.display = 'none';
         }
     }
-    
+
     playMusic(musicId) {
         // 通知播放器播放指定音乐
         if (window.embeddedMusicPlayer) {
@@ -524,7 +524,7 @@ class MusicManager {
             this.showToast('播放器未加载', 'warning');
         }
     }
-    
+
     downloadMusic(musicId) {
         const url = `/music/api/music/download/${musicId}?attachment=true`;
         const link = document.createElement('a');
@@ -535,16 +535,16 @@ class MusicManager {
         link.click();
         document.body.removeChild(link);
     }
-    
+
     async exportCSV() {
         try {
             const response = await fetch(`/music/api/music?page=1&per_page=1000${this.currentQuery ? '&q=' + encodeURIComponent(this.currentQuery) : ''}`);
             if (!response.ok) {
                 throw new Error('获取音乐列表失败');
             }
-            
+
             const data = await response.json();
-            
+
             // 生成 CSV
             const headers = ['ID', '标题', '艺术家', '文件名', 'URL', '封面', '时长', '文件大小', '排序', '状态', '上传时间'];
             const rows = data.items.map(music => [
@@ -560,12 +560,12 @@ class MusicManager {
                 music.enabled ? '启用' : '禁用',
                 music.uploaded_at
             ]);
-            
+
             const csvContent = [
                 headers.join(','),
                 ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
             ].join('\n');
-            
+
             // 下载 CSV
             const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
@@ -575,19 +575,19 @@ class MusicManager {
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
-            
+
             this.showToast('CSV 导出成功！', 'success');
-            
+
         } catch (error) {
             this.showToast('导出失败: ' + error.message, 'error');
         }
     }
-    
+
     previewCover(file, previewId) {
         if (!file) {
             return;
         }
-        
+
         const reader = new FileReader();
         reader.onload = (e) => {
             const preview = document.getElementById(previewId);
@@ -595,7 +595,7 @@ class MusicManager {
         };
         reader.readAsDataURL(file);
     }
-    
+
     notifyPlayerRefresh() {
         // 通知播放器刷新列表
         try {
@@ -604,7 +604,7 @@ class MusicManager {
         } catch (e) {
             console.warn('localStorage 操作失败:', e);
         }
-        
+
         // 通过 postMessage 通知（添加错误处理）
         try {
             if (window.postMessage) {
@@ -629,33 +629,33 @@ class MusicManager {
             }
         }
     }
-    
+
     // 工具函数
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
-    
+
     formatFileSize(bytes) {
         if (!bytes) return '未知';
         const mb = bytes / (1024 * 1024);
         return mb.toFixed(2) + ' MB';
     }
-    
+
     formatDuration(seconds) {
         if (!seconds) return '未知';
         const mins = Math.floor(seconds / 60);
         const secs = Math.floor(seconds % 60);
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     }
-    
+
     formatDate(dateString) {
         if (!dateString) return '未知';
         const date = new Date(dateString);
         return date.toLocaleDateString('zh-CN');
     }
-    
+
     showToast(message, type = 'info') {
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
@@ -665,16 +665,16 @@ class MusicManager {
                 <button type="button" class="btn-close" onclick="this.parentElement.parentElement.remove()"></button>
             </div>
         `;
-        
+
         let container = document.querySelector('.toast-container');
         if (!container) {
             container = document.createElement('div');
             container.className = 'toast-container';
             document.body.appendChild(container);
         }
-        
+
         container.appendChild(toast);
-        
+
         // 3秒后自动移除
         setTimeout(() => {
             toast.remove();
@@ -691,19 +691,19 @@ function initMusicManager(options = {}) {
     const { retryCount = 0, maxRetries = 2 } = options;
     const currentUrl = window.location.href;
     const timestamp = new Date().toISOString();
-    
+
     // 检查是否已经初始化过（防止重复绑定）
     const mainContent = document.querySelector('main.container#mainContent') || document.querySelector('main.container');
     if (mainContent && mainContent._musicManagerInitialized) {
         console.debug(`[${timestamp}] 音乐管理器已初始化，跳过重复初始化`);
         return;
     }
-    
+
     // 检查必要的元素是否存在
     const adminToken = document.getElementById('adminToken');
     const musicPanel = document.getElementById('music-panel');
     const musicListContainer = document.getElementById('musicListContainer');
-    
+
     // 详细日志记录
     if (!adminToken) {
         console.debug(`[${timestamp}] 音乐管理页面初始化检查失败:`, {
@@ -715,7 +715,7 @@ function initMusicManager(options = {}) {
             mainContentExists: !!mainContent,
             retryCount: retryCount
         });
-        
+
         // 如果未达到最大重试次数，延迟重试
         if (retryCount < maxRetries) {
             console.debug(`[${timestamp}] 将在 200ms 后重试初始化音乐管理器 (${retryCount + 1}/${maxRetries})`);
@@ -727,7 +727,7 @@ function initMusicManager(options = {}) {
         }
         return;
     }
-    
+
     // 如果已经存在实例，先清理
     if (musicManager) {
         try {
@@ -736,19 +736,19 @@ function initMusicManager(options = {}) {
             console.warn('清理旧实例时出错:', e);
         }
     }
-    
+
     try {
         // 创建新实例
         musicManager = new MusicManager();
-        
+
         // 标记为已初始化
         if (mainContent) {
             mainContent._musicManagerInitialized = true;
         }
-        
+
         // 将实例暴露到全局，方便调试
         window.musicManager = musicManager;
-        
+
         console.debug(`[${timestamp}] 音乐管理器初始化成功`, {
             url: currentUrl,
             retryCount: retryCount
@@ -780,7 +780,7 @@ window.addEventListener('pageLoaded', (event) => {
         mainContent._musicManagerInitialized = false;
     }
     musicManagerInitialized = false;
-    
+
     // 延迟一点时间，确保 DOM 已更新
     setTimeout(() => {
         initMusicManager();
@@ -795,10 +795,10 @@ window.addEventListener('content:loaded', (event) => {
         mainContent._musicManagerInitialized = false;
     }
     musicManagerInitialized = false;
-    
+
     const url = event.detail?.url || window.location.href;
     console.debug('content:loaded 事件触发，初始化音乐管理器', { url });
-    
+
     // 延迟一点时间，确保 DOM 已更新
     setTimeout(() => {
         initMusicManager();
